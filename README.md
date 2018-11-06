@@ -26,7 +26,7 @@ The only required arguments are the name to give the newly-created graph (which 
 The nodes and relationship flags should be specified once per input file.
 
 ```
-python bulk_insert.py GRAPH_DEMO -n demo/Person.csv -n demo/Country.csv -r demo/KNOWS.csv -r demo/VISITED.csv
+python bulk_insert.py GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
 ```
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this query, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
 
