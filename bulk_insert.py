@@ -241,11 +241,11 @@ def help():
 @click.option('--ssl', '-s', default=False, help='Server is SSL-enabled')
 # CSV file paths
 @click.option('--nodes', '-n', required=True, multiple=True, help='path to node csv file')
-@click.option('--relations', '-r', multiple=True, help='path to relation csv file')
+@click.option('--relationships', '-r', multiple=True, help='path to relation csv file')
 # Debug options
 @click.option('--max_buffer_size', '-m', default=1024*1024, help='(DEBUG ONLY) - max token count per Redis query')
 
-def bulk_insert(graph, host, port, password, ssl, nodes, relations, max_buffer_size):
+def bulk_insert(graph, host, port, password, ssl, nodes, relationships, max_buffer_size):
     global graphname
     global redis_client
     global max_tokens
@@ -260,8 +260,8 @@ def bulk_insert(graph, host, port, password, ssl, nodes, relations, max_buffer_s
     print("Building label descriptors...")
     label_descriptors = build_descriptors(nodes, "NODES")
     relation_count = 0
-    if relations:
-        relation_descriptors = build_descriptors(relations, "RELATIONS")
+    if relationships:
+        relation_descriptors = build_descriptors(relationships, "RELATIONS")
         relation_count = relation_descriptors.total_entities
 
     # Send prefix tokens to RedisGraph
@@ -272,7 +272,7 @@ def bulk_insert(graph, host, port, password, ssl, nodes, relations, max_buffer_s
     # Process input CSVs and commit their contents to RedisGraph
     # Possibly make this a method on Argument
     label_descriptors.batch_insert_descriptors()
-    if relations:
+    if relationships:
         relation_descriptors.batch_insert_descriptors()
     finalize_graph()
 
