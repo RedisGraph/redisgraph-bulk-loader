@@ -17,8 +17,9 @@ bulk_insert.py GRAPHNAME [OPTIONS]
 |---------|-----------------------|----------------------------------------------|
 |  -h     | --host TEXT           |    Redis server host (default: 127.0.0.1)    |
 |  -p     | --port INTEGER        |    Redis server port   (default: 6379)       |
-|  -P     | --password TEXT       |    Redis server password                     |
-|  -s     | --ssl TEXT            |    Server is SSL-enabled                     |
+|  -a     | --password TEXT       |    Redis server password                     |
+|  -c     | --ssl_certfile TEXT   |    path to certfile for SSL connection       |
+|  -k     | --ssl_keyfile TEXT    |    path to keyfile for SSL connection        |
 |  -n     | --nodes TEXT          |    path to node csv file  [required]         |
 |  -r     | --relationships TEXT  |    path to relationship csv file             |
 
@@ -41,6 +42,7 @@ The label (for nodes) or relationship type (for relationships) is derived from t
 ### Relationship files
 - Relationship inputs have no headers.
 - Each row should specify a source and destination node ID.
+- All specified node IDs must exist in the database, as described in [Determining Node IDs](#determining-node-ids).
 - Described relationships are always considered to be directed (source->destination).
 - The bulk insert script does not yet support adding properties to relationships (though this can be done after the fact with RedisGraph queries).
 - _NOTE_ Relationship processing does not yet include node lookups. The entries in a relationship file should all be integers corresponding to node IDs.

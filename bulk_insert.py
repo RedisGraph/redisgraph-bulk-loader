@@ -237,20 +237,24 @@ def help():
 # Redis server connection settings
 @click.option('--host', '-h', default='127.0.0.1', help='Redis server host')
 @click.option('--port', '-p', default=6379, help='Redis server port')
-@click.option('--password', '-P', default=None, help='Redis server password')
-@click.option('--ssl', '-s', default=False, help='Server is SSL-enabled')
+@click.option('--password', '-a', default=None, help='Redis server password')
+@click.option('--ssl_certfile', '-c', default=None, help='Path to SSL certfile')
+@click.option('--ssl_keyfile', '-k', default=None, help='Path to SSL keyfile')
 # CSV file paths
 @click.option('--nodes', '-n', required=True, multiple=True, help='path to node csv file')
 @click.option('--relationships', '-r', multiple=True, help='path to relation csv file')
 # Debug options
 @click.option('--max_buffer_size', '-m', default=1024*1024, help='(DEBUG ONLY) - max token count per Redis query')
 
-def bulk_insert(graph, host, port, password, ssl, nodes, relationships, max_buffer_size):
+def bulk_insert(graph, host, port, password, ssl_certfile, ssl_keyfile, nodes, relationships, max_buffer_size):
     global graphname
     global redis_client
     global max_tokens
     graphname = graph
-    redis_client = redis.StrictRedis(host=host, port=port, password=password, ssl=ssl)
+    ssl = False
+    if ssl_certfile or ssl_keyfile:
+        ssl = True
+    redis_client = redis.StrictRedis(host=host, port=port, password=password, ssl=ssl, ssl_certfile=ssl_certfile, ssl_keyfile=ssl_keyfile)
     if max_buffer_size > max_tokens:
         print("Requested buffer size too large, capping queries at %d." % max_tokens)
     else:
