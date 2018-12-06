@@ -1,3 +1,4 @@
-person1,country1
-person1,country1
-person2,country2
+src,dest, purpose
+person1,Israel,business
+person1,Japan,pleasure
+person2,Japan,business

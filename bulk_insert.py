@@ -4,7 +4,6 @@ import errno
 import struct
 import redis
 import click
-import ipdb # debug
 
 # Custom error class for invalid inputs
 class CSVError(Exception):
@@ -36,7 +35,7 @@ class Property:
             self.type = Type.NUMERIC
             self.format_str += "d"
             return
-        except: # TODO necessary?
+        except:
             pass
 
         # If field is 'false' or 'true', it is a boolean
@@ -57,15 +56,29 @@ class Property:
         self.pack_args = [len(prop_str), prop_str]
 
     def to_binary(self):
-        #  print "format: %s\tsize: %d" % (self.format_str, struct.calcsize(self.format_str))
         return struct.pack(self.format_str, *[self.type] + self.pack_args)
+
+class Relation:
+    def __init__(self, line):
+        self.src = NODE_DICT[line[0]]
+        self.dest = NODE_DICT[line[1]]
+        #  self.props = []
+        #  for field in line[2:]:
+            #  self.props.append(Property(field))
+
+    def to_binary(self):
+        fmt = "=QQ" # 8-byte unsigned ints for src and dest
+        return struct.pack(fmt, self.src, self.dest)
+
 
 WORKING_DIR = "working_"
 NODE_COUNT = 0
 RELATION_COUNT = 0
+NODE_DICT = {}
 NODEFILES = []
 RELFILES = []
 
+# This function applies to both node and relation files
 def pack_header(label, line):
     prop_count = len(line)
     # String format
@@ -77,7 +90,7 @@ def pack_header(label, line):
         args += [len(prop), prop]
     return struct.pack(fmt, *args)
 
-def pack_node(line):
+def pack_props(line):
     #  prop_count = len(line)
     props = []
     #  struct.pack()
@@ -89,7 +102,7 @@ def pack_node(line):
 def process_node_csvs(csvs):
     global NODE_COUNT
     global NODEFILES
-    node_dict = {}
+    global NODE_DICT
     # A Label or Relationship name is set by the CSV file name
     # TODO validate name string
     for in_csv in csvs:
@@ -114,66 +127,72 @@ def process_node_csvs(csvs):
 
             out = pack_header(label, header[properties_start:])
             outfile.write(out)
-            #  ipdb.set_trace()
 
             for row in reader:
                 # Expect all entities to have the same property count
                 if len(row) != expected_col_count:
                     raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
-                                   % (infile.name, reader.line_num, expected_col_count, len(row), ','.join(row)))
+                                   % (filename, reader.line_num, expected_col_count, len(row), ','.join(row)))
                 # Check for dangling commma
                 if row[-1] == ',':
                     raise CSVError("%s:%d Dangling comma in input. ('%s')"
-                                   % (infile.name, reader.line_num, ','.join(row)))
+                                   % (filename, reader.line_num, ','.join(row)))
                 # Add identifier->ID pair to dictionary
-                # TODO Check for duplications later
-                node_dict[row[0]] = NODE_COUNT
+                if row[0] in NODE_DICT:
+                    print("Node identifier '%s' was used multiple times - second occurrence at %s:%d" % (row[0], filename, reader.line_num))
+                NODE_DICT[row[0]] = NODE_COUNT
                 NODE_COUNT += 1
-                out = pack_node(row[properties_start:])
-                for prop in out:
+                props = pack_props(row[properties_start:])
+                for prop in props:
                     outfile.write(prop.to_binary())
 
-    return node_dict
+    return NODE_DICT
 
-def process_relation_csvs(csvs, node_dict):
+def process_relation_csvs(csvs):
     global RELATION_COUNT
     global RELFILES
     # A Label or Relationship name is set by the CSV file name
     # TODO validate name string
     for in_csv in csvs:
         filename = os.path.basename(in_csv)
-        relation = os.path.splitext(filename)[0]
+        relation = os.path.splitext(filename)[0].encode("ascii")
 
-        with open(os.path.join(WORKING_DIR, filename), 'w') as outfile, open(in_csv, 'rt') as infile:
+        with open(os.path.join(WORKING_DIR, relation + ".dat"), 'wb') as outfile, open(in_csv, 'rt') as infile:
             RELFILES.append(os.path.join(os.getcwd(), outfile.name))
-            reader = csv.reader(infile)
-            writer = csv.writer(outfile, quoting=csv.QUOTE_ALL)
+            # Initialize CSV reader that ignores leading whitespace in each field and does not modify input quote characters
+            reader = csv.reader(infile, skipinitialspace=True, quoting=csv.QUOTE_NONE)
             # Header format:
-            # properties[0..n]
-            #  header = next(reader)
+            # source identifier, dest identifier, properties[0..n]
+            header = next(reader)
             # Assume rectangular CSVs
-            #  expected_col_count = len(header) + 1 # prop_count + id field
+            expected_col_count = len(header) # src + dest + prop_count
 
-            # Output format:
-            # relation type name
-            writer.writerow([relation])
+            relations_have_properties = False
+            if expected_col_count < 2:
+                print("Relation file '%s' should have at least 2 elements in header line." % (filename))
+                return
+            elif expected_col_count > 2:
+                relations_have_properties = True
+
+            out = pack_header(relation, header[2:])
+            outfile.write(out)
+
             for row in reader:
-                # TODO Support edge properties
-                # Each row should have two columns (a source and dest ID)
-                if len(row) != 2:
-                    raise CSVError("%s:%d Expected 2 columns, encountered %d ('%s')"
-                                   % (filename, self.reader.line_num, len(row), ','.join(row)))
+                # Each row should have the same number of fields
+                if len(row) != expected_col_count:
+                    raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
+                                   % (filename, reader.line_num, expected_col_count, len(row), ','.join(row)))
                 # Check for dangling commma
-                if (row[-1] == ''):
+                if  row[-1] == '':
                     raise CSVError("%s:%d Dangling comma in input. ('%s')"
-                                    % (self.csvfile, self.reader.line_num, ','.join(row)))
-                # Retrieve src and dest iDs from hash
-                src = node_dict[row[0]]
-                dest = node_dict[row[1]]
-                relation_count += 1
-                # Add properties to CSV file
-                outrow = [src, dest]
-                writer.writerow(outrow)
+                                   % (infile.name, reader.line_num, ','.join(row)))
+                rel = Relation(row)
+                RELATION_COUNT += 1
+                outfile.write(rel.to_binary())
+                if relations_have_properties:
+                    props = pack_props(row[2:])
+                    for prop in props:
+                        outfile.write(prop.to_binary())
 
 
 def help():
@@ -198,16 +217,17 @@ def bulk_insert(graph, host, port, password, nodes, relations):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    node_dict = process_node_csvs(nodes)
+    process_node_csvs(nodes)
 
     if relations:
-        process_relation_csvs(relations, node_dict)
+        process_relation_csvs(relations)
 
     args = [graph, NODE_COUNT, RELATION_COUNT, "NODES"] + NODEFILES
     if RELATION_COUNT > 0:
         args += ["RELATIONS"] + RELFILES
 
     redis_client = redis.StrictRedis(host=host, port=port, password=password)
+    #  print(args)
     result = redis_client.execute_command("GRAPH.BULK", *args)
     print(result)
     # TODO Delete working dir
