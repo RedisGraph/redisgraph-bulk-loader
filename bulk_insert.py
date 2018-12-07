@@ -56,7 +56,7 @@ class Property:
         # If we've reached this point, the property is a string
         self.type = Type.STRING
         self.format_str += "%ds" % (len(prop_str) + 1)
-        self.pack_args = [prop_str]
+        self.pack_args = [str.encode(prop_str)]
 
     def to_binary(self):
         return struct.pack(self.format_str, *[self.type] + self.pack_args)
@@ -87,7 +87,7 @@ class EntityFile(object):
         args = [self.entity_str, prop_count]
         for prop in header[self.prop_offset:]:
             fmt += "%ds" % (len(prop) + 1)
-            args += [prop]
+            args += [str.encode(prop)]
         return struct.pack(fmt, *args)
 
     def pack_props(self, line):
@@ -95,10 +95,10 @@ class EntityFile(object):
         for field in line[self.prop_offset:]:
             props.append(Property(field))
 
-        return "".join(p.to_binary() for p in props)
+        return b''.join(p.to_binary() for p in props)
 
     def to_binary(self):
-        return self.packed_header + "".join(self.entities)
+        return self.packed_header + b''.join(self.entities)
 
 class NodeFile(EntityFile):
     def __init__(self, infile):
