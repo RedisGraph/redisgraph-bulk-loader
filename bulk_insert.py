@@ -55,8 +55,8 @@ class Property:
 
         # If we've reached this point, the property is a string
         self.type = Type.STRING
-        self.format_str += "I%ds" % len(prop_str) # 4-byte int for string length, then string
-        self.pack_args = [len(prop_str), prop_str]
+        self.format_str += "%ds" % (len(prop_str) + 1)
+        self.pack_args = [prop_str]
 
     def to_binary(self):
         return struct.pack(self.format_str, *[self.type] + self.pack_args)
@@ -83,12 +83,11 @@ class EntityFile(object):
     def pack_header(self, header):
         prop_count = len(header) - self.prop_offset
         # String format
-        # Is == length, string
-        fmt = "=I%dsI" % len(self.entity_str) # Unaligned native, entity_string length, entity_string string, count of properties
-        args = [len(self.entity_str), self.entity_str, prop_count]
+        fmt = "=%dsI" % (len(self.entity_str) + 1) # Unaligned native, entity_string, count of properties
+        args = [self.entity_str, prop_count]
         for prop in header[self.prop_offset:]:
-            fmt += "I%ds" % len(prop)
-            args += [len(prop), prop]
+            fmt += "%ds" % (len(prop) + 1)
+            args += [prop]
         return struct.pack(fmt, *args)
 
     def pack_props(self, line):
