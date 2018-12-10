@@ -130,7 +130,7 @@ class NodeFile(EntityFile):
             if row[-1] == ',':
                 raise CSVError("%s:%d Dangling comma in input. ('%s')"
                                % (self.infile.name, self.reader.line_num, ','.join(row)))
-            # Add identifier->ID pair to dictionary
+            # Add identifier->NodeID pair to dictionary
             if row[0] in NODE_DICT:
                 print("Node identifier '%s' was used multiple times - second occurrence at %s:%d" % (row[0], self.infile.name, self.reader.line_num))
             NODE_DICT[row[0]] = NODE_COUNT
@@ -203,16 +203,19 @@ def help():
 @click.option('--port', '-p', default=6379, help='Redis server port')
 @click.option('--password', '-a', default=None, help='Redis server password')
 # CSV file paths
-@click.option('--nodes', '-n', required=True, multiple=True, help='path to node csv file')
-@click.option('--relations', '-r', multiple=True, help='path to relation csv file')
+@click.option('--nodes', '-n', required=True, multiple=True, help='Path to node csv file')
+@click.option('--relations', '-r', multiple=True, help='Path to relation csv file')
+# Buffer size restrictions
+@click.option('--max_token_count', '-t', default=1024, help='max number of tokens to send per query (default 1024)')
+@click.option('--max_buffer_size', '-b', default=4086, help='maximum buffer size in megabytes (default 4086)')
 
-def bulk_insert(graph, host, port, password, nodes, relations):
+def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, max_buffer_size):
     nodefiles = process_node_csvs(nodes)
 
     if relations:
         relfiles = process_relation_csvs(relations)
 
-    args = [graph, NODE_COUNT, RELATION_COUNT, "NODES"] + [e.to_binary() for e in nodefiles]
+    args = [graph, "BEGIN", NODE_COUNT, RELATION_COUNT, "NODES"] + [e.to_binary() for e in nodefiles]
 
     if RELATION_COUNT > 0:
         args += ["RELATIONS"] + [e.to_binary() for e in relfiles]

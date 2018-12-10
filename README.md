@@ -32,30 +32,31 @@ python bulk_insert.py GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this query, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
 
 ## Input constraints
-### Node files
-- Node inputs are expected to be in a conventional table format. Each field in the header is a property name, which for each node is associated with the value in that column.
+### Node identifiers
+- If both nodes and relations are being created, each node must be associated with a unique identifier.
+- The identifier is the first column of each label CSV file. If this column's name starts with an underscore (`_`), the identifier is internal to the bulk loader operation and does not appear in the resulting graph. Otherwise, it is treated as a node property.
+- Source and destination nodes in relation CSV files should be referred to by their identifiers.
+- The name of the identifier columns otherwise do not matter, so long as no node has a duplicated value.
+- The uniqueness restriction is lifted if only nodes are being created.
+
+### Entity properties
+- Property types do not need to be explicitly provided.
+- Properties are not required to be exclusively composed of any type.
+- The types currently supported by the bulk loader are:
+    - `boolean`: either `true` or `false` (case-insensitive, not quote-interpolated).
+    - `numeric`: an unquoted value that can be read as a floating-point or integer type.
+    - `string`: any field that is either quote-interpolated or cannot be casted to a numeric or boolean type.
+    - `NULL`: an empty field.
+
+### Label file format:
 - Each row must have the same number of fields.
-- Extraneous whitespace is ignored.
-- Value types do not need to be provided. Properties are not required to be exclusively composed of numeric or string types.
-- There is no uniqueness constraint on nodes.
+- Leading and trailing whitespace is ignored.
+- The first field of a label file will be the node identifier, as described in [Node Identifiers](#node-identifiers).
+- With the possible exception of the first, each field in the header is a property key. The value in that position for each node is the property associated with that key.
 
 ### Relationship files
-- Relationship inputs have no headers.
-- Each row should specify a source and destination node ID.
-- All specified node IDs must exist in the database, as described in [Determining Node IDs](#determining-node-ids).
+- Each row must have the same number of fields.
+- Leading and trailing whitespace is ignored.
+- The first two fields of each row are the source and destination node identifiers. The names of these fields in the header do not matter.
+- If the file has more than 2 fields, all subsequent fields are relationship properties that adhere to the same rules as node properties.
 - Described relationships are always considered to be directed (source->destination).
-- The bulk insert script does not yet support adding properties to relationships (though this can be done after the fact with RedisGraph queries).
-- _NOTE_ Relationship processing does not yet include node lookups. The entries in a relationship file should all be integers corresponding to node IDs.
-
-
-### Determining Node IDs
-Node IDs are assigned in order of insertion. Node files are processed in the order specified by the user on the command line (though all Node files are processed before Relationship files).
-
-The first node in the first node file will have an ID of 0, and subsequent nodes across all files are ordered consecutively.
-
-If a relationship file has the line:
-```
-0,11
-```
-This indicates that there is a relationship from the first node in the first node file to the 12th node to be inserted, regardless of which file it may appear in.
-
