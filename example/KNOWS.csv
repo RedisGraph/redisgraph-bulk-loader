@@ -1,30 +1,14 @@
-src,dest
-person1,person2
-person1,person3
-person1,person4
-person1,person5
-person1,person6
-person1,person7
-person2,person1
-person2,person3
-person2,person4
-person2,person5
-person2,person6
-person3,person1
-person3,person2
-person3,person4
-person4,person1
-person4,person2
-person4,person3
-person4,person5
-person4,person6
-person5,person1
-person5,person2
-person5,person4
-person5,person6
-person6,person1
-person6,person2
-person6,person3
-person6,person4
-person5,person5
-person7,person1
+src, dest, relation
+Roi Lipman, Alon Fital, friend
+Roi Lipman, Ailon Velger, friend
+Roi Lipman, Ori Laslo, friend
+Roi Lipman, Boaz Arad, friend
+Roi Lipman, Omri Traub, friend
+Roi Lipman, Tal Doron, friend
+Alon Fital, Lucy Yanfital, married
+Alon Fital, Gal Derriere, friend
+Alon Fital, Mor Yesharim, friend
+Ailon Velger, Jane Chernomorin, married
+Ailon Velger, Noam Nativ, friend
+Ori Laslo, Shelly Laslo Rooz, married
+Boaz Arad, Valerie Abigail Arad, friend
