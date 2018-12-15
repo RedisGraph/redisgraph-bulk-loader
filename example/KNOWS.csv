@@ -1,29 +1,14 @@
-0,1
-0,2
-0,3
-0,4
-0,5
-0,6
-1,0
-1,2
-1,3
-1,4
-1,5
-2,0
-2,1
-2,3
-3,0
-3,1
-3,2
-3,4
-3,5
-4,0
-4,1
-4,3
-4,5
-5,0
-5,1
-5,2
-5,3
-5,4
-6,0
+src, dest, relation
+Roi Lipman, Alon Fital, friend
+Roi Lipman, Ailon Velger, friend
+Roi Lipman, Ori Laslo, friend
+Roi Lipman, Boaz Arad, friend
+Roi Lipman, Omri Traub, friend
+Roi Lipman, Tal Doron, friend
+Alon Fital, Lucy Yanfital, married
+Alon Fital, Gal Derriere, friend
+Alon Fital, Mor Yesharim, friend
+Ailon Velger, Jane Chernomorin, married
+Ailon Velger, Noam Nativ, friend
+Ori Laslo, Shelly Laslo Rooz, married
+Boaz Arad, Valerie Abigail Arad, friend
