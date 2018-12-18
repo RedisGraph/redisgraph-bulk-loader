@@ -1,11 +1,11 @@
 import csv
 import os
 import io
+import sys
 import struct
 from timeit import default_timer as timer
 import redis
 import click
-from backports import csv
 
 # Global variables
 CONFIGS = None # thresholds for batching Redis queries
@@ -99,9 +99,9 @@ class QueryBuffer(object):
 class EntityFile(object):
     def __init__(self, filename):
         # The label or relation type string is the basename of the file
-        self.entity_str = os.path.splitext(os.path.basename(filename))[0].encode('utf-8')
+        self.entity_str = os.path.splitext(os.path.basename(filename))[0].encode()
         # Input file handling
-        self.infile = io.open(filename, 'rt', encoding='utf-8')
+        self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
         self.reader = csv.reader(self.infile, skipinitialspace=True, quoting=csv.QUOTE_NONE)
@@ -109,7 +109,7 @@ class EntityFile(object):
         self.prop_offset = 0 # Starting index of properties in row
         self.prop_count = 0 # Number of properties per entity
 
-        self.packed_header = ""
+        self.packed_header = b''
         self.binary_entities = []
         self.binary_size = 0 # size of binary token
         self.count_entities() # number of entities/row in file.
@@ -143,7 +143,7 @@ class EntityFile(object):
         fmt = "=%dsI" % (len(self.entity_str) + 1) # Unaligned native, entity_string, count of properties
         args = [self.entity_str, prop_count]
         for p in header[self.prop_offset:]:
-            prop = p.encode('utf-8')
+            prop = p.encode()
             fmt += "%ds" % (len(prop) + 1) # encode string with a null terminator
             args.append(prop)
         return struct.pack(fmt, *args)
@@ -291,8 +291,8 @@ def prop_to_binary(prop_str):
         return struct.pack(format_str + '?', Type.BOOL, True)
 
     # If we've reached this point, the property is a string
+    encoded_str = str.encode(prop_str) # struct.pack requires bytes objects as arguments
     # Encoding len+1 adds a null terminator to the string
-    encoded_str = prop_str.encode('utf-8')
     format_str += "%ds" % (len(encoded_str) + 1)
     return struct.pack(format_str, Type.STRING, encoded_str)
 
@@ -333,6 +333,9 @@ def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, 
     global NODE_DICT
     global TOP_NODE_ID
     global QUERY_BUF
+
+    if sys.version_info[0] < 3:
+        raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
     TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
     CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size)

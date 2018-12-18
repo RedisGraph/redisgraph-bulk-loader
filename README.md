@@ -1,14 +1,17 @@
 # redisgraph-bulk-loader
 A Python utility for building RedisGraph databases from CSV inputs
 
+## Requirements
+The bulk loader utility requires a Python 3 interpreter.
+
+A Redis server with the [RedisGraph](https://github.com/RedisLabsModules/RedisGraph) module must be running. Installation instructions may be found at:
+https://oss.redislabs.com/redisgraph/
+
 ## Installation
 The bulk loader script's dependencies can be resolved using pip:
 ```
 pip install --user -r requirements.txt
 ```
-
-A Redis server with the [RedisGraph](https://github.com/RedisLabsModules/RedisGraph) module must be running. Installation instructions may be found at:
-https://oss.redislabs.com/redisgraph/
 
 ## Usage
 bulk_insert.py GRAPHNAME [OPTIONS]
