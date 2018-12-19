@@ -99,7 +99,7 @@ class QueryBuffer(object):
 class EntityFile(object):
     def __init__(self, filename):
         # The label or relation type string is the basename of the file
-        self.entity_str = os.path.splitext(os.path.basename(filename))[0].encode()
+        self.entity_str = os.path.splitext(os.path.basename(filename))[0]
         # Input file handling
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
@@ -140,8 +140,9 @@ class EntityFile(object):
     def pack_header(self, header):
         prop_count = len(header) - self.prop_offset
         # String format
-        fmt = "=%dsI" % (len(self.entity_str) + 1) # Unaligned native, entity_string, count of properties
-        args = [self.entity_str, prop_count]
+        entity_bytes = self.entity_str.encode()
+        fmt = "=%dsI" % (len(entity_bytes) + 1) # Unaligned native, entity name, count of properties
+        args = [entity_bytes, prop_count]
         for p in header[self.prop_offset:]:
             prop = p.encode()
             fmt += "%ds" % (len(prop) + 1) # encode string with a null terminator
