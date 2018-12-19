@@ -359,6 +359,12 @@ def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, 
         # Ignore check if the connected server does not support the "MODULE LIST" command
         pass
 
+    # Verify that the graph name is not already used in the Redis database
+    key_exists = client.execute_command("EXISTS", graph)
+    if key_exists:
+        print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
+        exit(1)
+
     QUERY_BUF = QueryBuffer(graph, client)
 
     # Create a node dictionary if we're building relations and as such require unique identifiers
