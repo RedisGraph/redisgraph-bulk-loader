@@ -26,6 +26,7 @@ bulk_insert.py GRAPHNAME [OPTIONS]
 |  -t     | --max-token-count INT |    max number of tokens sent in each Redis query (default 1024) |
 |  -b     | --max-buffer-size INT |    max batch size (MBs) of each Redis query (default 4096)      |
 |  -c     | --max-token-size INT  |    max size (MBs) of each token sent to Redis (default 500)     |
+|  -q     | --quote-minimal       |    enable smart quoting for items within the CSV                |
 
 
 The only required arguments are the name to give the newly-created graph (which can appear anywhere) and at least one node CSV file.
