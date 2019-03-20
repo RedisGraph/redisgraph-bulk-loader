@@ -8,10 +8,10 @@ import redis
 import click
 
 # Global variables
-CONFIGS = None # thresholds for batching Redis queries
-NODE_DICT = {} # global node dictionary
-TOP_NODE_ID = 0 # next ID to assign to a node
-QUERY_BUF = None # Buffer for query being constructed
+CONFIGS = None         # thresholds for batching Redis queries
+NODE_DICT = {}         # global node dictionary
+TOP_NODE_ID = 0        # next ID to assign to a node
+QUERY_BUF = None       # Buffer for query being constructed
 
 # Custom error class for invalid inputs
 class CSVError(Exception):
@@ -104,7 +104,7 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, skipinitialspace=True, quoting=csv.QUOTE_NONE)
+        self.reader = csv.reader(self.infile, skipinitialspace=True, quoting=QUOTING)
 
         self.prop_offset = 0 # Starting index of properties in row
         self.prop_count = 0 # Number of properties per entity
@@ -328,15 +328,22 @@ def process_entity_csvs(cls, csvs):
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
+@click.option('--quote-minimal/--no-quote-minimal', '-q/-d', default=False, help='only quote those fields which contain special characters such as delimiter, quotechar or any of the characters in lineterminator')
 
-def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, max_buffer_size, max_token_size):
+def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, max_buffer_size, max_token_size, quote_minimal):
     global CONFIGS
     global NODE_DICT
     global TOP_NODE_ID
     global QUERY_BUF
+    global QUOTING
 
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
+
+    if quote_minimal:
+        QUOTING=csv.QUOTE_MINIMAL
+    else:
+        QUOTING=csv.QUOTE_NONE 
 
     TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
     CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size)
