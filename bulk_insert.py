@@ -104,7 +104,6 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        #self.reader = csv.reader(self.infile, skipinitialspace=True)
         self.reader = csv.reader(self.infile, skipinitialspace=True, quoting=QUOTING)
 
         self.prop_offset = 0 # Starting index of properties in row
@@ -328,7 +327,6 @@ def process_entity_csvs(cls, csvs):
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
-@click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--quote-minimal/--no-quote-minimal', '-q/-d', default=False, help='only quote those fields which contain special characters such as delimiter, quotechar or any of the characters in lineterminator')
 
