@@ -26,7 +26,7 @@ class Type:
 
 # User-configurable thresholds for when to send queries to Redis
 class Configs(object):
-    def __init__(self, max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes):
+    def __init__(self, max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges):
         # Maximum number of tokens per query
         # 1024 * 1024 is the hard-coded Redis maximum. We'll set a slightly lower limit so
         # that we can safely ignore tokens that aren't binary strings
@@ -39,6 +39,7 @@ class Configs(object):
         self.max_token_size = min(max_token_size * 1000000, 512 * 1000000)
 
         self.skip_invalid_nodes = skip_invalid_nodes
+        self.skip_invalid_edges = skip_invalid_edges
 
 # QueryBuffer is the class that processes input CSVs and emits their binary formats to the Redis client.
 class QueryBuffer(object):
@@ -99,14 +100,14 @@ class QueryBuffer(object):
 
 # Superclass for label and relation CSV files
 class EntityFile(object):
-    def __init__(self, filename):
+    def __init__(self, filename, separator):
         # The label or relation type string is the basename of the file
         self.entity_str = os.path.splitext(os.path.basename(filename))[0]
         # Input file handling
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, skipinitialspace=True, quoting=QUOTING)
+        self.reader = csv.reader(self.infile, delimiter=separator, skipinitialspace=True, quoting=QUOTING)
 
         self.prop_offset = 0 # Starting index of properties in row
         self.prop_count = 0 # Number of properties per entity
@@ -164,8 +165,8 @@ class EntityFile(object):
 
 # Handler class for processing label csv files.
 class Label(EntityFile):
-    def __init__(self, infile):
-        super(Label, self).__init__(infile)
+    def __init__(self, infile, separator):
+        super(Label, self).__init__(infile, separator)
         expected_col_count = self.process_header()
         self.process_entities(expected_col_count)
         self.infile.close()
@@ -220,8 +221,8 @@ class Label(EntityFile):
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
-    def __init__(self, infile):
-        super(RelationType, self).__init__(infile)
+    def __init__(self, infile, separator):
+        super(RelationType, self).__init__(infile, separator)
         expected_col_count = self.process_header()
         self.process_entities(expected_col_count)
         self.infile.close()
@@ -251,8 +252,11 @@ class RelationType(EntityFile):
                     src = NODE_DICT[row[0]]
                     dest = NODE_DICT[row[1]]
                 except KeyError as e:
-                    print("Relationship specified a non-existent identifier.")
-                    raise e
+                    print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[0], row[1]))
+                    if CONFIGS.skip_invalid_edges is False:
+                        raise e
+                    else:
+                        continue
                 fmt = "=QQ" # 8-byte unsigned ints for src and dest
                 row_binary = struct.pack(fmt, src, dest) + self.pack_props(row)
                 row_binary_len = len(row_binary)
@@ -302,11 +306,11 @@ def prop_to_binary(prop_str):
 
 # For each node input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
-def process_entity_csvs(cls, csvs):
+def process_entity_csvs(cls, csvs, separator):
     global QUERY_BUF
     for in_csv in csvs:
         # Build entity descriptor from input CSV
-        entity = cls(in_csv)
+        entity = cls(in_csv, separator)
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
         if (QUERY_BUF.buffer_size + added_size >= CONFIGS.max_buffer_size
@@ -327,14 +331,17 @@ def process_entity_csvs(cls, csvs):
 # CSV file paths
 @click.option('--nodes', '-n', required=True, multiple=True, help='Path to node csv file')
 @click.option('--relations', '-r', multiple=True, help='Path to relation csv file')
+@click.option('--separator', '-o', default=',', help='Field token separator in csv file')
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--quote-minimal/--no-quote-minimal', '-q/-d', default=False, help='only quote those fields which contain special characters such as delimiter, quotechar or any of the characters in lineterminator')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
+@click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
 
-def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, max_buffer_size, max_token_size, quote_minimal, skip_invalid_nodes):
+
+def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote_minimal, skip_invalid_nodes, skip_invalid_edges):
     global CONFIGS
     global NODE_DICT
     global TOP_NODE_ID
@@ -350,7 +357,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, 
         QUOTING=csv.QUOTE_NONE 
 
     TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
-    CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes)
+    CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges)
 
     start_time = timer()
     # Attempt to connect to Redis server
@@ -384,10 +391,10 @@ def bulk_insert(graph, host, port, password, nodes, relations, max_token_count, 
     else:
         NODE_DICT = None
 
-    process_entity_csvs(Label, nodes)
+    process_entity_csvs(Label, nodes, separator)
 
     if relations:
-        process_entity_csvs(RelationType, relations)
+        process_entity_csvs(RelationType, relations, separator)
 
     # Send all remaining tokens to Redis
     QUERY_BUF.send_buffer()
