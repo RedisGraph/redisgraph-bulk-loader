@@ -331,7 +331,7 @@ def process_entity_csvs(cls, csvs, separator):
 # CSV file paths
 @click.option('--nodes', '-n', required=True, multiple=True, help='Path to node csv file')
 @click.option('--relations', '-r', multiple=True, help='Path to relation csv file')
-@click.option('--separator', '-o', default=',', help='Line token separator in csv file')
+@click.option('--separator', '-o', default=',', help='Field token separator in csv file')
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
