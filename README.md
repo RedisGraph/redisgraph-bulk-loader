@@ -26,7 +26,8 @@ bulk_insert.py GRAPHNAME [OPTIONS]
 |  -t     | --max-token-count INT |    max number of tokens sent in each Redis query (default 1024) |
 |  -b     | --max-buffer-size INT |    max batch size (MBs) of each Redis query (default 4096)      |
 |  -c     | --max-token-size INT  |    max size (MBs) of each token sent to Redis (default 500)     |
-|  -q     | --quote-minimal       |    enable smart quoting for items within the CSV                |
+|  -q     | --quote               |    the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3 |
+|  -f     | --field-types         |    json to set explicit types for each field, format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string)       |
 
 
 The only required arguments are the name to give the newly-created graph (which can appear anywhere) and at least one node CSV file.
@@ -38,6 +39,15 @@ The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` should 
 python bulk_insert.py GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
 ```
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this example, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
+
+The default behaviour is to infer the type for each row based on the value of each row, which can cause type mismatch problem. For example if a string property contains string values of 'false', 'true' or numbers. To avoid this, use --field-types to explicitly set the type for each column in the csv. 
+EG, to explicitly set to string.
+
+```
+python3 bulk_insert.py ROBOTS -f '{"Robots" : [3]}' -q1 -n example2/Robots.csv 
+```
+
+Notice that when -f isn't used, the robot name "30165" would be inserted as a number rather than a string which causes problems in RedisGraph when searching. 
 
 ## Input constraints
 ### Node identifiers
@@ -55,6 +65,8 @@ The label (for nodes) or relationship type (for relationships) is derived from t
     - `numeric`: an unquoted value that can be read as a floating-point or integer type.
     - `string`: any field that is either quote-interpolated or cannot be casted to a numeric or boolean type.
     - `NULL`: an empty field.
+- Default behaviour is to infer the property type, attempting to cast it to null, float, boolean or string in that order. 
+- If explicit type is required, for example, if a value is "1234" and it must not be inferred into a float, you can use the option -f to specify the type explicitly for each row being imported. 
 
 ### Label file format:
 - Each row must have the same number of fields.
@@ -68,3 +80,4 @@ The label (for nodes) or relationship type (for relationships) is derived from t
 - The first two fields of each row are the source and destination node identifiers. The names of these fields in the header do not matter.
 - If the file has more than 2 fields, all subsequent fields are relationship properties that adhere to the same rules as node properties.
 - Described relationships are always considered to be directed (source->destination).
+
