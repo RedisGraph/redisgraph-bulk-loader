@@ -318,7 +318,7 @@ def prop_to_binary(prop_str, type):
         return struct.pack(format_str, Type.STRING, encoded_str)
     
     ## if it hasn't returned by this point, it is trying to set it to a type that it can't adopt
-    raise Exception("unable to parse [" + prop_str + "] with type ["+type+"]")
+    raise Exception("unable to parse [" + prop_str + "] with type ["+repr(type)+"]")
 
 # For each node input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
@@ -374,7 +374,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
             FIELD_TYPES = json.loads(field_types)
         except: 
             raise Exception("Problem parsing field-types. Use the format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string) ")
-    
+
     QUOTING=int(quote)
 
     TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
