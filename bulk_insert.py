@@ -369,10 +369,12 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
-    try :
-        FIELD_TYPES = json.loads(field_types)
-    except: FIELD_TYPES = None
-
+    if field_types != None:
+        try :
+            FIELD_TYPES = json.loads(field_types)
+        except: 
+            raise Exception("Problem parsing field-types. Use the format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string) ")
+    
     QUOTING=int(quote)
 
     TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
