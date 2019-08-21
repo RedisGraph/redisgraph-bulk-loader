@@ -6,12 +6,15 @@ import struct
 from timeit import default_timer as timer
 import redis
 import click
+import json
 
 # Global variables
 CONFIGS = None         # thresholds for batching Redis queries
 NODE_DICT = {}         # global node dictionary
 TOP_NODE_ID = 0        # next ID to assign to a node
 QUERY_BUF = None       # Buffer for query being constructed
+
+FIELD_TYPES = None
 
 # Custom error class for invalid inputs
 class CSVError(Exception):
@@ -155,8 +158,13 @@ class EntityFile(object):
     # Convert a list of properties into a binary string
     def pack_props(self, line):
         props = []
-        for field in line[self.prop_offset:]:
-            props.append(prop_to_binary(field))
+        for num, field in enumerate(line[self.prop_offset:]):
+            try :
+                FIELD_TYPES[self.entity_str][num]
+            except :
+                props.append(prop_to_binary(field, None))
+            else :
+                props.append(prop_to_binary(field, FIELD_TYPES[self.entity_str][num]))
 
         return b''.join(p for p in props)
 
@@ -278,7 +286,8 @@ class RelationType(EntityFile):
 
 # Convert a single CSV property field into a binary stream.
 # Supported property types are string, numeric, boolean, and NULL.
-def prop_to_binary(prop_str):
+# type is either Type.NUMERIC, Type.BOOL or Type.STRING, and explicitly sets the value to this type if possible
+def prop_to_binary(prop_str, type):
     # All format strings start with an unsigned char to represent our Type enum
     format_str = "=B"
     if not prop_str:
@@ -286,23 +295,30 @@ def prop_to_binary(prop_str):
         return struct.pack(format_str, Type.NULL)
 
     # If field can be cast to a float, allow it
-    try:
-        numeric_prop = float(prop_str)
-        return struct.pack(format_str + "d", Type.NUMERIC, numeric_prop)
-    except:
-        pass
+    
+    if type == None or type == Type.NUMERIC:
+        try:
+            numeric_prop = float(prop_str)
+            return struct.pack(format_str + "d", Type.NUMERIC, numeric_prop)
+        except:
+            pass
 
-    # If field is 'false' or 'true', it is a boolean
-    if prop_str.lower() == 'false':
-        return struct.pack(format_str + '?', Type.BOOL, False)
-    elif prop_str.lower() == 'true':
-        return struct.pack(format_str + '?', Type.BOOL, True)
+    if type == None or type == Type.BOOL:
+        # If field is 'false' or 'true', it is a boolean
+        if prop_str.lower() == 'false':
+            return struct.pack(format_str + '?', Type.BOOL, False)
+        elif prop_str.lower() == 'true':
+            return struct.pack(format_str + '?', Type.BOOL, True)
 
-    # If we've reached this point, the property is a string
-    encoded_str = str.encode(prop_str) # struct.pack requires bytes objects as arguments
-    # Encoding len+1 adds a null terminator to the string
-    format_str += "%ds" % (len(encoded_str) + 1)
-    return struct.pack(format_str, Type.STRING, encoded_str)
+    if type == None or type == Type.STRING:
+        # If we've reached this point, the property is a string
+        encoded_str = str.encode(prop_str) # struct.pack requires bytes objects as arguments
+        # Encoding len+1 adds a null terminator to the string
+        format_str += "%ds" % (len(encoded_str) + 1)
+        return struct.pack(format_str, Type.STRING, encoded_str)
+    
+    ## if it hasn't returned by this point, it is trying to set it to a type that it can't adopt
+    raise Exception("unable to parse [" + prop_str + "] with type ["+type+"]")
 
 # For each node input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
@@ -337,20 +353,26 @@ def process_entity_csvs(cls, csvs, separator):
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--quote', '-q', default=3, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
+@click.option('--field-types', '-f', default={}, help='')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
 
 
-def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, skip_invalid_nodes, skip_invalid_edges):
+def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, field_types, skip_invalid_nodes, skip_invalid_edges):
     global CONFIGS
     global NODE_DICT
     global TOP_NODE_ID
     global QUERY_BUF
     global QUOTING
+    global FIELD_TYPES
 
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
-        
+
+    try :
+        FIELD_TYPES = json.loads(field_types)
+    except: FIELD_TYPES = None
+
     QUOTING=int(quote)
 
     TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
