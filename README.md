@@ -26,7 +26,7 @@ bulk_insert.py GRAPHNAME [OPTIONS]
 |  -t     | --max-token-count INT |    max number of tokens sent in each Redis query (default 1024) |
 |  -b     | --max-buffer-size INT |    max batch size (MBs) of each Redis query (default 4096)      |
 |  -c     | --max-token-size INT  |    max size (MBs) of each token sent to Redis (default 500)     |
-|  -q     | --quote-minimal       |    enable smart quoting for items within the CSV                |
+|  -q     | --quote               |    the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3 |
 |  -f     | --field-types         |    json to set explicit types for each field, format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string)       |
 
 
