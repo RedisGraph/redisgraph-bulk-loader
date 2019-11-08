@@ -160,11 +160,11 @@ class EntityFile(object):
         props = []
         for num, field in enumerate(line[self.prop_offset:]):
             field_type_idx = self.prop_offset+num
-            try :
-                FIELD_TYPES[self.entity_str][num]
-            except :
+            try:
+                FIELD_TYPES[self.entity_str][field_type_idx]
+            except:
                 props.append(prop_to_binary(field, None))
-            else :
+            else:
                 props.append(prop_to_binary(field, FIELD_TYPES[self.entity_str][field_type_idx]))
         return b''.join(p for p in props)
 
@@ -204,7 +204,7 @@ class Label(EntityFile):
                 if NODE_DICT is not None:
                     if row[0] in NODE_DICT:
                         sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
-                            % (row[0], self.infile.name, self.reader.line_num))
+                                % (row[0], self.infile.name, self.reader.line_num))
                         if CONFIGS.skip_invalid_nodes is False:
                             exit(1)
                     NODE_DICT[row[0]] = TOP_NODE_ID
@@ -295,7 +295,6 @@ def prop_to_binary(prop_str, type):
         return struct.pack(format_str, Type.NULL)
 
     # If field can be cast to a float, allow it
-    
     if type == None or type == Type.NUMERIC:
         try:
             numeric_prop = float(prop_str)
@@ -316,7 +315,7 @@ def prop_to_binary(prop_str, type):
         # Encoding len+1 adds a null terminator to the string
         format_str += "%ds" % (len(encoded_str) + 1)
         return struct.pack(format_str, Type.STRING, encoded_str)
-    
+
     ## if it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_str + "] with type ["+repr(type)+"]")
 
@@ -372,7 +371,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     if field_types != None:
         try :
             FIELD_TYPES = json.loads(field_types)
-        except: 
+        except:
             raise Exception("Problem parsing field-types. Use the format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string) ")
 
     QUOTING=int(quote)
