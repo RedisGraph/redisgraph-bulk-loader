@@ -159,13 +159,13 @@ class EntityFile(object):
     def pack_props(self, line):
         props = []
         for num, field in enumerate(line[self.prop_offset:]):
+            field_type_idx = self.prop_offset+num
             try :
                 FIELD_TYPES[self.entity_str][num]
             except :
                 props.append(prop_to_binary(field, None))
             else :
-                props.append(prop_to_binary(field, FIELD_TYPES[self.entity_str][num]))
-
+                props.append(prop_to_binary(field, FIELD_TYPES[self.entity_str][field_type_idx]))
         return b''.join(p for p in props)
 
     def to_binary(self):
