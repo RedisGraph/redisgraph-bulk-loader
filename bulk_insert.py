@@ -298,7 +298,8 @@ def prop_to_binary(prop_val, type):
     if type == None or type == Type.NUMERIC:
         try:
             numeric_prop = float(prop_val)
-            return struct.pack(format_str + "d", Type.NUMERIC, numeric_prop)
+            if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
+                return struct.pack(format_str + "d", Type.NUMERIC, numeric_prop)
         except:
             pass
 
