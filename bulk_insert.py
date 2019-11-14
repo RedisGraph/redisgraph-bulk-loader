@@ -290,7 +290,7 @@ class RelationType(EntityFile):
 def prop_to_binary(prop_val, type):
     # All format strings start with an unsigned char to represent our Type enum
     format_str = "=B"
-    if not prop_str:
+    if prop_val is None:
         # An empty field indicates a NULL property
         return struct.pack(format_str, Type.NULL)
 
