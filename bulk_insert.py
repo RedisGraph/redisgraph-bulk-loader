@@ -2,6 +2,7 @@ import csv
 import os
 import io
 import sys
+import math
 import struct
 import json
 from timeit import default_timer as timer
