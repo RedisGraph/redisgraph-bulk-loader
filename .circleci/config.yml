@@ -40,3 +40,19 @@ jobs:
             . venv/bin/activate
             python3 bulk_insert.py -n ./example/Person.csv -n ./example/Country.csv -r ./example/KNOWS.csv -r ./example/VISITED.csv Visits
             python3 bulk_insert.py -n ./example2/Robots.csv Robots
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build 
