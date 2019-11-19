@@ -34,8 +34,8 @@ jobs:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
-      -run:
-        name: examples
-        command: |
-          python3 bulk_insert.py -n ./example/Person.csv -n ./example/Country.csv -r ./example/KNOWS.csv -r ./example/VISITED.csv Visits
-          python3 bulk_insert.py -n ./example2/Robots.csv Robots
+      - run:
+          name: examples
+          command: |
+            python3 bulk_insert.py -n ./example/Person.csv -n ./example/Country.csv -r ./example/KNOWS.csv -r ./example/VISITED.csv Visits
+            python3 bulk_insert.py -n ./example2/Robots.csv Robots
