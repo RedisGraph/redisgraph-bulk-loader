@@ -1,9 +1,4 @@
-import csv
-import os
-import io
 import sys
-import math
-import struct
 import json
 from timeit import default_timer as timer
 import redis
@@ -11,8 +6,9 @@ import click
 from configs import Configs
 from query_buffer import QueryBuffer
 from label import Label
-from relation_type import RelationType 
+from relation_type import RelationType
 import module_vars
+
 
 # For each node input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
@@ -49,8 +45,6 @@ def process_entity_csvs(cls, csvs, separator):
 @click.option('--field-types', '-f', default=None, help='json to set explicit types for each field, format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string)')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
-
-
 def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, field_types, skip_invalid_nodes, skip_invalid_edges):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
@@ -108,6 +102,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
 
     end_time = timer()
     module_vars.QUERY_BUF.report_completion(end_time - start_time)
+
 
 if __name__ == '__main__':
     bulk_insert()

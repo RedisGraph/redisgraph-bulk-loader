@@ -1,6 +1,8 @@
+import sys
 import click
 from entity_file import EntityFile
 import module_vars
+
 
 # Handler class for processing label csv files.
 class Label(EntityFile):
@@ -33,7 +35,7 @@ class Label(EntityFile):
                         sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
                                          % (row[0], self.infile.name, self.reader.line_num))
                         if module_vars.CONFIGS.skip_invalid_nodes is False:
-                            exit(1)
+                            sys.exit(1)
                     module_vars.NODE_DICT[row[0]] = module_vars.TOP_NODE_ID
                     module_vars.TOP_NODE_ID += 1
                 row_binary = self.pack_props(row)

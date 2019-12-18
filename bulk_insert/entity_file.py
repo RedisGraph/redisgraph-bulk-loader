@@ -3,10 +3,8 @@ import io
 import csv
 import struct
 import module_vars
+from exceptions import CSVError
 
-# Custom error class for invalid inputs
-class CSVError(Exception):
-    pass
 
 # Official enum support varies widely between 2.7 and 3.x, so we'll use a custom class
 class Type:
@@ -14,6 +12,7 @@ class Type:
     BOOL = 1
     NUMERIC = 2
     STRING = 3
+
 
 # Convert a single CSV property field into a binary stream.
 # Supported property types are string, numeric, boolean, and NULL.
@@ -50,6 +49,7 @@ def prop_to_binary(prop_val, type):
 
     ## if it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_val + "] with type ["+repr(type)+"]")
+
 
 # Superclass for label and relation CSV files
 class EntityFile(object):

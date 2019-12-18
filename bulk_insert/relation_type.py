@@ -1,7 +1,9 @@
 import struct
 import click
 from entity_file import EntityFile
+from exceptions import CSVError
 import module_vars
+
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
