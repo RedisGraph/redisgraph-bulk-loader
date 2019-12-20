@@ -25,8 +25,8 @@ def process_entities(entities):
         entity.process_entities()
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
-        if (module_vars.QUERY_BUF.buffer_size + added_size >= module_vars.CONFIGS.max_buffer_size
-                or module_vars.QUERY_BUF.redis_token_count + len(entity.binary_entities) >= module_vars.CONFIGS.max_token_count):
+        if (module_vars.QUERY_BUF.buffer_size + added_size >= Configs.max_buffer_size
+                or module_vars.QUERY_BUF.redis_token_count + len(entity.binary_entities) >= Configs.max_token_count):
             # Send and flush the buffer if appropriate
             module_vars.QUERY_BUF.send_buffer()
         # Add binary data to list and update all counts
@@ -55,10 +55,8 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
-    module_vars.QUOTING = int(quote)
-
-    module_vars.TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
-    module_vars.CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator)
+    # Initialize configurations with command-line arguments
+    Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
 
     start_time = timer()
     # Attempt to connect to Redis server

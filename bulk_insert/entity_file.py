@@ -3,8 +3,7 @@ import io
 import csv
 import math
 import struct
-import module_vars
-import configs
+from configs import Configs
 from exceptions import CSVError, SchemaError
 from schema import Type, convert_schema_type
 
@@ -63,7 +62,7 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter=module_vars.CONFIGS.separator, skipinitialspace=True, quoting=module_vars.QUOTING)
+        self.reader = csv.reader(self.infile, delimiter=Configs.separator, skipinitialspace=True, quoting=Configs.quoting)
 
         self.packed_header = b''
         self.binary_entities = []
