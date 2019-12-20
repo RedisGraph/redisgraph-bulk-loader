@@ -1,7 +1,10 @@
 import sys
 import click
 from entity_file import EntityFile
+from configs import Configs
+from exceptions import SchemaError
 import module_vars
+import schema
 
 
 # Handler class for processing label csv files.
@@ -12,11 +15,23 @@ class Label(EntityFile):
         self.process_entities(expected_col_count)
         self.infile.close()
 
+    def process_header_schema(self, header):
+        prop_count = len(header)
+        self.types = [None] * prop_count
+        for i, prop in enumerate(header):
+            pair = prop.split(':')
+            if len(pair) != 2:
+                raise SchemaError("Each header entry should be a colon-separated pair")
+            self.types[i] = schema.convert_schema_type(pair[1].casefold())
+
     def process_header(self):
         # Header format:
         # node identifier (which may be a property key), then all other property keys
         header = next(self.reader)
         expected_col_count = len(header)
+
+        if module_vars.CONFIGS.enforce_schema:
+            self.process_header_schema(header)
         # If identifier field begins with an underscore, don't add it as a property.
         if header[0][0] == '_':
             self.prop_offset = 1

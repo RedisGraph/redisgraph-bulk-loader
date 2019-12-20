@@ -45,7 +45,8 @@ def process_entity_csvs(cls, csvs, separator):
 @click.option('--field-types', '-f', default=None, help='json to set explicit types for each field, format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string)')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
-def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, field_types, skip_invalid_nodes, skip_invalid_edges):
+@click.option('--enforce-schema', '-S', default=False, is_flag=True, help='header line introduces property schema')
+def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, field_types, skip_invalid_nodes, skip_invalid_edges, enforce_schema):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
@@ -58,7 +59,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     module_vars.QUOTING = int(quote)
 
     module_vars.TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
-    module_vars.CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges)
+    module_vars.CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, enforce_schema)
 
     start_time = timer()
     # Attempt to connect to Redis server
@@ -73,7 +74,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
         module_list = client.execute_command("MODULE LIST")
         if not any(b'graph' in module_description for module_description in module_list):
             print("RedisGraph module not loaded on connected server.")
-            exit(1)
+            sys.exit(1)
     except redis.exceptions.ResponseError:
         # Ignore check if the connected server does not support the "MODULE LIST" command
         pass
@@ -82,7 +83,11 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     key_exists = client.execute_command("EXISTS", graph)
     if key_exists:
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
-        exit(1)
+        sys.exit(1)
+
+    # If we're enforcing a schema, validate the headers in each file?
+    if enforce_schema:
+        pass
 
     module_vars.QUERY_BUF = QueryBuffer(graph, client)
 

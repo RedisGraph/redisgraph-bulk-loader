@@ -4,19 +4,12 @@ import csv
 import struct
 import module_vars
 from exceptions import CSVError
-
-
-# Official enum support varies widely between 2.7 and 3.x, so we'll use a custom class
-class Type:
-    NULL = 0
-    BOOL = 1
-    NUMERIC = 2
-    STRING = 3
+import schema
 
 
 # Convert a single CSV property field into a binary stream.
 # Supported property types are string, numeric, boolean, and NULL.
-# type is either Type.NUMERIC, Type.BOOL or Type.STRING, and explicitly sets the value to this type if possible
+# type is either Type.DOUBLE, Type.BOOL or Type.STRING, and explicitly sets the value to this type if possible
 def prop_to_binary(prop_val, type):
     # All format strings start with an unsigned char to represent our Type enum
     format_str = "=B"
@@ -25,11 +18,11 @@ def prop_to_binary(prop_val, type):
         return struct.pack(format_str, Type.NULL)
 
     # If field can be cast to a float, allow it
-    if type == None or type == Type.NUMERIC:
+    if type == None or type == Type.DOUBLE:
         try:
             numeric_prop = float(prop_val)
             if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
-                return struct.pack(format_str + "d", Type.NUMERIC, numeric_prop)
+                return struct.pack(format_str + "d", Type.DOUBLE, numeric_prop)
         except:
             pass
 
@@ -45,9 +38,9 @@ def prop_to_binary(prop_val, type):
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
         format_str += "%ds" % (len(encoded_str) + 1)
-        return struct.pack(format_str, Type.STRING, encoded_str)
+        return struct.pack(format_str, schema.Type.STRING, encoded_str)
 
-    ## if it hasn't returned by this point, it is trying to set it to a type that it can't adopt
+    # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_val + "] with type ["+repr(type)+"]")
 
 
