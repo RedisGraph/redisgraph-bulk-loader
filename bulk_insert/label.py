@@ -4,46 +4,24 @@ from entity_file import EntityFile
 from configs import Configs
 from exceptions import SchemaError
 import module_vars
-import schema
+from schema import Type
+from schema import convert_schema_type
 
 
 # Handler class for processing label csv files.
 class Label(EntityFile):
-    def __init__(self, infile, separator):
-        super(Label, self).__init__(infile, separator)
-        expected_col_count = self.process_header()
-        self.process_entities(expected_col_count)
-        self.infile.close()
+    def __init__(self, infile):
+        super(Label, self).__init__(infile)
+        # Verify that exactly one field is labeled ID.
+        if self.types.count(Type.ID) != 1:
+            raise SchemaError("Node file '%s' should have exactly one ID column."
+                              % (infile.name))
 
-    def process_header_schema(self, header):
-        prop_count = len(header)
-        self.types = [None] * prop_count
-        for i, prop in enumerate(header):
-            pair = prop.split(':')
-            if len(pair) != 2:
-                raise SchemaError("Each header entry should be a colon-separated pair")
-            self.types[i] = schema.convert_schema_type(pair[1].casefold())
-
-    def process_header(self):
-        # Header format:
-        # node identifier (which may be a property key), then all other property keys
-        header = next(self.reader)
-        expected_col_count = len(header)
-
-        if module_vars.CONFIGS.enforce_schema:
-            self.process_header_schema(header)
-        # If identifier field begins with an underscore, don't add it as a property.
-        if header[0][0] == '_':
-            self.prop_offset = 1
-        self.packed_header = self.pack_header(header)
-        self.binary_size += len(self.packed_header)
-        return expected_col_count
-
-    def process_entities(self, expected_col_count):
+    def process_entities(self):
         entities_created = 0
         with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str) as reader:
             for row in reader:
-                self.validate_row(expected_col_count, row)
+                self.validate_row(row)
                 # Add identifier->ID pair to dictionary if we are building relations
                 if module_vars.NODE_DICT is not None:
                     if row[0] in module_vars.NODE_DICT:
@@ -69,4 +47,5 @@ class Label(EntityFile):
                 self.binary_size += row_binary_len
                 self.binary_entities.append(row_binary)
             module_vars.QUERY_BUF.labels.append(self.to_binary())
+        self.infile.close()
         print("%d nodes created with label '%s'" % (entities_created, self.entity_str))

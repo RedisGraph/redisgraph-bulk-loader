@@ -10,6 +10,7 @@ class Type:
     TYPE = 7
     START_ID = 8
     END_ID = 9
+    IGNORE = 10
 
 
 def convert_schema_type(in_type):
@@ -21,6 +22,7 @@ def convert_schema_type(in_type):
         'integer': Type.INTEGER,
         'id': Type.ID,
         'label': Type.LABEL,
+        'type': Type.TYPE,
         'start_id': Type.START_ID,
         'end_id': Type.END_ID
         }[in_type]

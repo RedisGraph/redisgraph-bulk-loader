@@ -10,12 +10,19 @@ from relation_type import RelationType
 import module_vars
 
 
-# For each node input file, validate contents and convert to binary format.
-# If any buffer limits have been reached, flush all enqueued inserts to Redis.
-def process_entity_csvs(cls, csvs, separator):
-    for in_csv in csvs:
+def parse_schemas(cls, csvs):
+    schemas = [None] * len(csvs)
+    for idx, in_csv in enumerate(csvs):
         # Build entity descriptor from input CSV
-        entity = cls(in_csv, separator)
+        schemas[idx] = cls(in_csv)
+    return schemas
+
+
+# For each input file, validate contents and convert to binary format.
+# If any buffer limits have been reached, flush all enqueued inserts to Redis.
+def process_entities(entities):
+    for entity in entities:
+        entity.process_entities()
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
         if (module_vars.QUERY_BUF.buffer_size + added_size >= module_vars.CONFIGS.max_buffer_size
@@ -42,24 +49,16 @@ def process_entity_csvs(cls, csvs, separator):
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--quote', '-q', default=3, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
-@click.option('--field-types', '-f', default=None, help='json to set explicit types for each field, format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string)')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
-@click.option('--enforce-schema', '-S', default=False, is_flag=True, help='header line introduces property schema')
-def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, field_types, skip_invalid_nodes, skip_invalid_edges, enforce_schema):
+def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, skip_invalid_nodes, skip_invalid_edges):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
-
-    if field_types is not None:
-        try:
-            module_vars.FIELD_TYPES = json.loads(field_types)
-        except:
-            raise Exception("Problem parsing field-types. Use the format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string) ")
 
     module_vars.QUOTING = int(quote)
 
     module_vars.TOP_NODE_ID = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests)
-    module_vars.CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, enforce_schema)
+    module_vars.CONFIGS = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator)
 
     start_time = timer()
     # Attempt to connect to Redis server
@@ -85,9 +84,9 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    # If we're enforcing a schema, validate the headers in each file?
-    if enforce_schema:
-        pass
+    # Read the header rows of each input CSV and save its schema.
+    labels = parse_schemas(Label, nodes)
+    reltypes = parse_schemas(RelationType, relations)
 
     module_vars.QUERY_BUF = QueryBuffer(graph, client)
 
@@ -97,10 +96,10 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     else:
         module_vars.NODE_DICT = None
 
-    process_entity_csvs(Label, nodes, separator)
+    process_entities(labels)
 
     if relations:
-        process_entity_csvs(RelationType, relations, separator)
+        process_entities(reltypes)
 
     # Send all remaining tokens to Redis
     module_vars.QUERY_BUF.send_buffer()

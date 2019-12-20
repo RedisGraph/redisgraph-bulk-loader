@@ -1,44 +1,45 @@
 import struct
 import click
 from entity_file import EntityFile
-from exceptions import CSVError
+from exceptions import CSVError, SchemaError
 import module_vars
+from schema import Type
 
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
-    def __init__(self, infile, separator):
-        super(RelationType, self).__init__(infile, separator)
-        expected_col_count = self.process_header()
-        self.process_entities(expected_col_count)
-        self.infile.close()
-
-    def process_header(self):
-        # Header format:
-        # source identifier, dest identifier, properties[0..n]
-        header = next(self.reader)
-        # Assume rectangular CSVs
-        expected_col_count = len(header)
-        self.prop_count = expected_col_count - 2
-        if self.prop_count < 0:
+    def __init__(self, infile):
+        super(RelationType, self).__init__(infile)
+        if self.column_count < 2:
             raise CSVError("Relation file '%s' should have at least 2 elements in header line."
-                           % (self.infile.name))
+                           % (infile.name))
 
-        self.prop_offset = 2
-        self.packed_header = self.pack_header(header) # skip src and dest identifiers
-        self.binary_size += len(self.packed_header)
-        return expected_col_count
+        self.start_id = -1
+        self.end_id = -1
+        self.post_process_header()
 
-    def process_entities(self, expected_col_count):
+    def post_process_header(self):
+        # Can interleave these tasks if preferred.
+        if self.types.count(Type.START_ID) != 1:
+            raise SchemaError("Relation file '%s' should have exactly one START_ID column."
+                              % (self.infile.name))
+        if self.types.count(Type.END_ID) != 1:
+            raise SchemaError("Relation file '%s' should have exactly one END_ID column."
+                              % (self.infile.name))
+
+        self.start_id = self.types.index(Type.START_ID)
+        self.end_id = self.types.index(Type.END_ID)
+
+    def process_entities(self):
         entities_created = 0
         with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str) as reader:
             for row in reader:
-                self.validate_row(expected_col_count, row)
+                self.validate_row(row)
                 try:
-                    src = module_vars.NODE_DICT[row[0]]
-                    dest = module_vars.NODE_DICT[row[1]]
+                    src = module_vars.NODE_DICT[row[self.start_id]]
+                    dest = module_vars.NODE_DICT[row[self.end_id]]
                 except KeyError as e:
-                    print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[0], row[1]))
+                    print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
                     if module_vars.CONFIGS.skip_invalid_edges is False:
                         raise e
                     continue
@@ -59,4 +60,5 @@ class RelationType(EntityFile):
                 self.binary_size += row_binary_len
                 self.binary_entities.append(row_binary)
             module_vars.QUERY_BUF.reltypes.append(self.to_binary())
+        self.infile.close()
         print("%d relations created for type '%s'" % (entities_created, self.entity_str))
