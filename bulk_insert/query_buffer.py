@@ -1,6 +1,9 @@
 # QueryBuffer is the class that processes input CSVs and emits their binary formats to the Redis client.
 class QueryBuffer(object):
-    def __init__(self, graphname, client):
+    nodes = None
+    top_node_id = 0
+
+    def __init__(self, graphname, client, has_relations):
         # Redis client and data for each query
         self.client = client
 
@@ -20,6 +23,10 @@ class QueryBuffer(object):
 
         self.nodes_created = 0 # Total number of nodes created
         self.relations_created = 0 # Total number of relations created
+
+        # Create a node dictionary if we're building relations and as such require unique identifiers
+        if has_relations:
+            self.nodes = {}
 
     # Send all pending inserts to Redis
     def send_buffer(self):

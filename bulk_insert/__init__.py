@@ -7,5 +7,4 @@ from .exceptions import (
         CSVError,
         SchemaError
 )
-#  from .module_vars import *
 #  from .entity_file import EntityFile
