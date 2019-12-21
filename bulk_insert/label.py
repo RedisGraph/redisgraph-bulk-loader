@@ -1,7 +1,8 @@
 import sys
 import click
 from entity_file import EntityFile
-from configs import Configs
+#  from configs import Configs
+import configs
 from exceptions import SchemaError
 from schema import Type
 
@@ -34,16 +35,16 @@ class Label(EntityFile):
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
                 if self.binary_size + row_binary_len > Configs.max_token_size:
-                    self.query_buf.QUERY_BUF.labels.append(self.to_binary())
-                    self.query_buf.QUERY_BUF.send_buffer()
+                    self.query_buf.labels.append(self.to_binary())
+                    self.query_buf.send_buffer()
                     self.reset_partial_binary()
                     # Push the label onto the query buffer again, as there are more entities to process.
-                    self.query_buf.QUERY_BUF.labels.append(self.to_binary())
+                    self.query_buf.labels.append(self.to_binary())
 
-                self.query_buf.QUERY_BUF.node_count += 1
+                self.query_buf.node_count += 1
                 entities_created += 1
                 self.binary_size += row_binary_len
                 self.binary_entities.append(row_binary)
-            self.query_buf.QUERY_BUF.labels.append(self.to_binary())
+            self.query_buf.labels.append(self.to_binary())
         self.infile.close()
         print("%d nodes created with label '%s'" % (entities_created, self.entity_str))

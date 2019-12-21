@@ -18,18 +18,18 @@ def parse_schemas(cls, query_buf, csvs):
 
 # For each input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
-def process_entities(entities):
+def process_entities(entities, query_buf):
     for entity in entities:
         entity.process_entities()
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
-        if (self.query_buf.QUERY_BUF.buffer_size + added_size >= Configs.max_buffer_size
-                or self.query_buf.QUERY_BUF.redis_token_count + len(entity.binary_entities) >= Configs.max_token_count):
+        if (query_buf.buffer_size + added_size >= Configs.max_buffer_size
+                or query_buf.redis_token_count + len(entity.binary_entities) >= Configs.max_token_count):
             # Send and flush the buffer if appropriate
-            self.query_buf.QUERY_BUF.send_buffer()
+            query_buf.send_buffer()
         # Add binary data to list and update all counts
-        self.query_buf.QUERY_BUF.redis_token_count += len(entity.binary_entities)
-        self.query_buf.QUERY_BUF.buffer_size += added_size
+        query_buf.redis_token_count += len(entity.binary_entities)
+        query_buf.buffer_size += added_size
 
 # Command-line arguments
 @click.command()
@@ -54,7 +54,7 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
     # Initialize configurations with command-line arguments
-    Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
+    c = Configs(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
 
     start_time = timer()
     # Attempt to connect to Redis server
@@ -86,10 +86,10 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     labels = parse_schemas(Label, query_buf, nodes)
     reltypes = parse_schemas(RelationType, query_buf, relations)
 
-    process_entities(labels)
+    process_entities(labels, query_buf)
 
     if relations:
-        process_entities(reltypes)
+        process_entities(reltypes, query_buf)
 
     # Send all remaining tokens to Redis
     query_buf.send_buffer()

@@ -64,6 +64,8 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
+        import ipdb
+        ipdb.set_trace()
         self.reader = csv.reader(self.infile, delimiter=Configs.separator, skipinitialspace=True, quoting=Configs.quoting)
 
         self.packed_header = b''
@@ -89,7 +91,7 @@ class EntityFile(object):
         # Each row should have the same number of fields
         if len(row) != self.column_count:
             raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
-                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), configs.separator.join(row)))
+                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), Configs.separator.join(row)))
 
     # If part of a CSV file was sent to Redis, delete the processed entities and update the binary size
     def reset_partial_binary(self):

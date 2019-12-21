@@ -1,5 +1,9 @@
-# User-configurable thresholds for when to send queries to Redis
-class Configs(object):
+from dataclasses import dataclass
+
+
+#  @dataclass(frozen=True)
+@dataclass
+class Configs:
     max_token_count = 1024 * 1023
     max_buffer_size = 0
     max_token_size = 512 * 1000000
@@ -7,7 +11,6 @@ class Configs(object):
     skip_invalid_edges = False
     separator = ','
     quoting = 3
-    top_node_id = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests) # TODO del
 
     def __init__(self, max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, quoting):
         # Maximum number of tokens per query
@@ -27,5 +30,3 @@ class Configs(object):
         self.separator = separator
 
         self.quoting = quoting
-
-        self.top_node_id = 0 # reset global ID variable (in case we are calling bulk_insert from unit tests) # TODO del
