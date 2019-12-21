@@ -2,7 +2,7 @@ import struct
 import click
 from entity_file import EntityFile
 from exceptions import CSVError, SchemaError
-#  from configs import configs
+import configs
 from schema import Type
 
 
@@ -40,8 +40,6 @@ class RelationType(EntityFile):
                     dest = self.query_buf.nodes[row[self.end_id]]
                 except KeyError as e:
                     print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
-                    import ipdb
-                    ipdb.set_trace()
                     if configs.skip_invalid_edges is False:
                         raise e
                     continue

@@ -1,7 +1,7 @@
 import sys
 import click
 from entity_file import EntityFile
-#  from configs import Configs
+#  from configs import configs
 import configs
 from exceptions import SchemaError
 from schema import Type
@@ -26,7 +26,7 @@ class Label(EntityFile):
                     if row[0] in self.query_buf.nodes:
                         sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
                                          % (row[0], self.infile.name, self.reader.line_num))
-                        if Configs.skip_invalid_nodes is False:
+                        if configs.skip_invalid_nodes is False:
                             sys.exit(1)
                     self.query_buf.nodes[row[0]] = self.query_buf.top_node_id
                     self.query_buf.top_node_id += 1
@@ -34,7 +34,7 @@ class Label(EntityFile):
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
-                if self.binary_size + row_binary_len > Configs.max_token_size:
+                if self.binary_size + row_binary_len > configs.max_token_size:
                     self.query_buf.labels.append(self.to_binary())
                     self.query_buf.send_buffer()
                     self.reset_partial_binary()

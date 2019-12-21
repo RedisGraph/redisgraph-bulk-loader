@@ -3,7 +3,7 @@ import io
 import csv
 import math
 import struct
-from configs import Configs
+import configs
 from exceptions import CSVError, SchemaError
 from schema import Type, convert_schema_type
 
@@ -47,8 +47,6 @@ def prop_to_binary(prop_val, prop_type):
         format_str += "%ds" % (len(encoded_str) + 1)
         return struct.pack(format_str, Type.STRING, encoded_str)
 
-    import ipdb
-    ipdb.set_trace()
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_val + "] with type ["+repr(type)+"]")
 
@@ -64,9 +62,7 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        import ipdb
-        ipdb.set_trace()
-        self.reader = csv.reader(self.infile, delimiter=Configs.separator, skipinitialspace=True, quoting=Configs.quoting)
+        self.reader = csv.reader(self.infile, delimiter=configs.separator, skipinitialspace=True, quoting=configs.quoting)
 
         self.packed_header = b''
         self.binary_entities = []
@@ -91,7 +87,7 @@ class EntityFile(object):
         # Each row should have the same number of fields
         if len(row) != self.column_count:
             raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
-                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), Configs.separator.join(row)))
+                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), configs.separator.join(row)))
 
     # If part of a CSV file was sent to Redis, delete the processed entities and update the binary size
     def reset_partial_binary(self):
