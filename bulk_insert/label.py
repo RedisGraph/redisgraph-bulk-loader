@@ -1,3 +1,4 @@
+import re
 import sys
 import click
 import configs
@@ -10,11 +11,20 @@ from exceptions import SchemaError
 class Label(EntityFile):
     def __init__(self, infile):
         super(Label, self).__init__(infile)
+        self.post_process_header()
+
+    def post_process_header(self):
         # Verify that exactly one field is labeled ID.
         if self.types.count(Type.ID) != 1:
             raise SchemaError("Node file '%s' should have exactly one ID column."
-                              % (infile.name))
-        # TODO tmp, ID namespacing
+                              % (self.infile.name))
+        header = next(self.reader)
+        self.id = self.types.index(Type.ID) # Track the offset containing the node ID.
+        id_field = header[self.id]
+        # If the ID field specifies an ID namespace in parentheses like "val:ID(NAMESPACE)", capture the namespace.
+        match = re.search(r"\((\w+)\)", id_field)
+        if match:
+            self.id_namespace = match.group(1)
 
     def process_entities(self):
         entities_created = 0
@@ -23,12 +33,16 @@ class Label(EntityFile):
                 self.validate_row(row)
                 # Add identifier->ID pair to dictionary if we are building relations
                 if QueryBuffer.nodes is not None:
-                    if row[0] in QueryBuffer.nodes:
+                    id_field = row[self.id]
+                    if self.id_namespace:
+                        id_field = self.id_namespace + '.' + str(id_field)
+
+                    if id_field in QueryBuffer.nodes:
                         sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
-                                         % (row[0], self.infile.name, self.reader.line_num))
+                                         % (row[self.id], self.infile.name, self.reader.line_num))
                         if configs.skip_invalid_nodes is False:
                             sys.exit(1)
-                    QueryBuffer.nodes[row[0]] = QueryBuffer.top_node_id
+                    QueryBuffer.nodes[id_field] = QueryBuffer.top_node_id
                     QueryBuffer.top_node_id += 1
                 row_binary = self.pack_props(row)
                 row_binary_len = len(row_binary)

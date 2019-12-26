@@ -1,3 +1,4 @@
+import re
 import struct
 import click
 import configs
@@ -29,6 +30,14 @@ class RelationType(EntityFile):
 
         self.start_id = self.types.index(Type.START_ID)
         self.end_id = self.types.index(Type.END_ID)
+        # Capture namespaces of start and end IDs if provided
+        header = next(self.reader)
+        start_match = re.search(r"\((\w+)\)", header[self.start_id])
+        if start_match:
+            self.start_namespace = start_match.group(1)
+        end_match = re.search(r"\((\w+)\)", header[self.end_id])
+        if end_match:
+            self.end_namespace = end_match.group(1)
 
     def process_entities(self):
         entities_created = 0
@@ -36,11 +45,20 @@ class RelationType(EntityFile):
             for row in reader:
                 self.validate_row(row)
                 try:
-                    src = QueryBuffer.nodes[row[self.start_id]]
-                    dest = QueryBuffer.nodes[row[self.end_id]]
+                    start_id = row[self.start_id]
+                    if self.start_namespace:
+                        start_id = self.start_namespace + '.' + str(start_id)
+                    end_id = row[self.end_id]
+                    if self.end_namespace:
+                        end_id = self.end_namespace + '.' + str(end_id)
+
+                    src = QueryBuffer.nodes[start_id]
+                    dest = QueryBuffer.nodes[end_id]
                 except KeyError as e:
                     print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
                     if configs.skip_invalid_edges is False:
+                        import ipdb
+                        ipdb.set_trace()
                         raise e
                     continue
                 fmt = "=QQ" # 8-byte unsigned ints for src and dest

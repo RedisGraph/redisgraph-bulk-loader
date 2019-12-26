@@ -28,7 +28,13 @@ def convert_schema_type(in_type):
                 'boolean': Type.BOOL,
                 'double': Type.DOUBLE,
                 'string': Type.STRING,
-                'integer': Type.INTEGER,
+                'string[]': Type.STRING, # TODO tmp
+                #  'integer': Type.INTEGER,
+                #  'int': Type.INTEGER,
+                #  'long': Type.INTEGER,
+                'integer': Type.DOUBLE,
+                'int': Type.DOUBLE,
+                'long': Type.DOUBLE,
                 'id': Type.ID,
                 'label': Type.LABEL,
                 'type': Type.TYPE,
@@ -36,8 +42,13 @@ def convert_schema_type(in_type):
                 'end_id': Type.END_ID
                 }[in_type]
     except KeyError:
+        # TODO tmp
         if in_type.startswith('id('):
             return Type.ID
+        elif in_type.startswith('start_id('):
+            return Type.START_ID
+        elif in_type.startswith('end_id('):
+            return Type.END_ID
         else:
             raise SchemaError("Encountered invalid field type '%s'" % in_type)
 
@@ -82,7 +93,7 @@ def prop_to_binary(prop_val, prop_type):
         return struct.pack(format_str, Type.STRING, encoded_str)
 
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
-    raise Exception("unable to parse [" + prop_val + "] with type ["+repr(type)+"]")
+    raise Exception("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
 
 
 # Superclass for label and relation CSV files
@@ -105,7 +116,7 @@ class EntityFile(object):
         self.convert_header()
 
         self.count_entities() # number of entities/row in file.
-        next(self.reader) # Skip header for next read.
+        #  next(self.reader) # Skip header for next read.
 
     # Count number of rows in file.
     def count_entities(self):
@@ -153,10 +164,14 @@ class EntityFile(object):
             pair = field.split(':')
             if len(pair) > 2:
                 raise CSVError("Field '%s' had %d colons" % field, len(field))
-            elif len(pair) < 2:
+
+            if (len(pair[0]) == 0): # Delete empty string in a case like ":LABEL"
+                del pair[0]
+
+            if len(pair) < 2:
                 self.types[idx] = convert_schema_type(pair[0].casefold())
                 self.skip_offsets[idx] = True
-                if self.types[idx] not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
+                if self.types[idx] not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE, Type.LABEL): # TODO label
                     # Any other field should have 2 elements
                     raise SchemaError("Each property in the header should be a colon-separated pair")
             else:
