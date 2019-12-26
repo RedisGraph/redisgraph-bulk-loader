@@ -2,9 +2,8 @@ import struct
 import click
 import configs
 import query_buffer as QueryBuffer
-from entity_file import EntityFile
+from entity_file import Type, EntityFile
 from exceptions import CSVError, SchemaError
-from schema import Type
 
 
 # Handler class for processing relation csv files.

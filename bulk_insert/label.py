@@ -2,9 +2,8 @@ import sys
 import click
 import configs
 import query_buffer as QueryBuffer
-from entity_file import EntityFile
+from entity_file import Type, EntityFile
 from exceptions import SchemaError
-from schema import Type
 
 
 # Handler class for processing label csv files.
@@ -15,6 +14,7 @@ class Label(EntityFile):
         if self.types.count(Type.ID) != 1:
             raise SchemaError("Node file '%s' should have exactly one ID column."
                               % (infile.name))
+        # TODO tmp, ID namespacing
 
     def process_entities(self):
         entities_created = 0

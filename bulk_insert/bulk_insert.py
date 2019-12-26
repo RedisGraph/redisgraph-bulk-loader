@@ -51,10 +51,9 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_no
 
 
 def QueryBuf_Set(graphname, client, has_relations):
-    QueryBuffer.graphname = graphname
-
     # Redis client and data for each query
     QueryBuffer.client = client
+    QueryBuffer.graphname = graphname
 
     # Create a node dictionary if we're building relations and as such require unique identifiers
     if has_relations:
