@@ -53,8 +53,7 @@ def prop_to_binary(prop_val, prop_type):
 
 # Superclass for label and relation CSV files
 class EntityFile(object):
-    def __init__(self, query_buf, filename):
-        self.query_buf = query_buf
+    def __init__(self, filename):
 
         # The label or relation type string is the basename of the file
         self.entity_str = os.path.splitext(os.path.basename(filename))[0]

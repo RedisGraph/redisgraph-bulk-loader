@@ -1,15 +1,16 @@
 import struct
 import click
+import configs
+import query_buffer as QueryBuffer
 from entity_file import EntityFile
 from exceptions import CSVError, SchemaError
-import configs
 from schema import Type
 
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
-    def __init__(self, query_buf, infile):
-        super(RelationType, self).__init__(infile, query_buf)
+    def __init__(self, infile):
+        super(RelationType, self).__init__(infile)
         if self.column_count < 2:
             raise CSVError("Relation file '%s' should have at least 2 elements in header line."
                            % (infile.name))
@@ -36,8 +37,8 @@ class RelationType(EntityFile):
             for row in reader:
                 self.validate_row(row)
                 try:
-                    src = self.query_buf.nodes[row[self.start_id]]
-                    dest = self.query_buf.nodes[row[self.end_id]]
+                    src = QueryBuffer.nodes[row[self.start_id]]
+                    dest = QueryBuffer.nodes[row[self.end_id]]
                 except KeyError as e:
                     print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
                     if configs.skip_invalid_edges is False:
@@ -49,16 +50,16 @@ class RelationType(EntityFile):
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
                 if self.binary_size + row_binary_len > configs.max_token_size:
-                    self.query_buf.reltypes.append(self.to_binary())
-                    self.query_buf.send_buffer()
+                    QueryBuffer.reltypes.append(self.to_binary())
+                    QueryBuffer.send_buffer()
                     self.reset_partial_binary()
                     # Push the reltype onto the query buffer again, as there are more entities to process.
-                    self.query_buf.reltypes.append(self.to_binary())
+                    QueryBuffer.reltypes.append(self.to_binary())
 
-                self.query_buf.relation_count += 1
+                QueryBuffer.relation_count += 1
                 entities_created += 1
                 self.binary_size += row_binary_len
                 self.binary_entities.append(row_binary)
-            self.query_buf.reltypes.append(self.to_binary())
+            QueryBuffer.reltypes.append(self.to_binary())
         self.infile.close()
         print("%d relations created for type '%s'" % (entities_created, self.entity_str))
