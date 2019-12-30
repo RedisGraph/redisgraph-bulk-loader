@@ -1,4 +1,4 @@
-# QueryBuffer is the module that processes input CSVs and emits their binary formats to the Redis client.
+# QueryBuffer is the singleton module that processes input CSVs and emits their binary formats to the Redis client.
 
 nodes = None
 top_node_id = 0

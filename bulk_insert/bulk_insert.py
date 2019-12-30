@@ -8,11 +8,16 @@ from label import Label
 from relation_type import RelationType
 
 
-def parse_schemas(cls, csvs):
-    schemas = [None] * len(csvs)
-    for idx, in_csv in enumerate(csvs):
+def parse_schemas(cls, path_to_csv, csv_tuples):
+    schemas = [None] * (len(path_to_csv) + len(csv_tuples))
+    for idx, in_csv in enumerate(path_to_csv):
         # Build entity descriptor from input CSV
-        schemas[idx] = cls(in_csv)
+        schemas[idx] = cls(in_csv, None)
+
+    offset = len(path_to_csv)
+    for idx, csv_tuple in enumerate(csv_tuples):
+        # Build entity descriptor from input CSV
+        schemas[idx + offset] = cls(csv_tuple[1], csv_tuple[0])
     return schemas
 
 
@@ -69,7 +74,9 @@ def QueryBuf_Set(graphname, client, has_relations):
 @click.option('--password', '-a', default=None, help='Redis server password')
 # CSV file paths
 @click.option('--nodes', '-n', required=True, multiple=True, help='Path to node csv file')
+@click.option('--nodes-with-label', '-N', nargs=2, multiple=True, help='Label string followed by path to node csv file')
 @click.option('--relations', '-r', multiple=True, help='Path to relation csv file')
+@click.option('--relations-with-type', '-R', nargs=2, multiple=True, help='Relation type string followed by path to relation csv file')
 @click.option('--separator', '-o', default=',', help='Field token separator in csv file')
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
@@ -78,7 +85,7 @@ def QueryBuf_Set(graphname, client, has_relations):
 @click.option('--quote', '-q', default=3, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
-def bulk_insert(graph, host, port, password, nodes, relations, separator, max_token_count, max_buffer_size, max_token_size, quote, skip_invalid_nodes, skip_invalid_edges):
+def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations, relations_with_type, separator, max_token_count, max_buffer_size, max_token_size, quote, skip_invalid_nodes, skip_invalid_edges):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
@@ -112,13 +119,11 @@ def bulk_insert(graph, host, port, password, nodes, relations, separator, max_to
     QueryBuf_Set(graph, client, relations is not None)
 
     # Read the header rows of each input CSV and save its schema.
-    labels = parse_schemas(Label, nodes)
-    reltypes = parse_schemas(RelationType, relations)
+    labels = parse_schemas(Label, nodes, nodes_with_label)
+    reltypes = parse_schemas(RelationType, relations, relations_with_type)
 
     process_entities(labels)
-
-    if relations:
-        process_entities(reltypes)
+    process_entities(reltypes)
 
     # Send all remaining tokens to Redis
     QueryBuffer.send_buffer()

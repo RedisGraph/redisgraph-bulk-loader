@@ -98,12 +98,15 @@ def prop_to_binary(prop_val, prop_type):
 
 # Superclass for label and relation CSV files
 class EntityFile(object):
-    def __init__(self, filename):
-
+    def __init__(self, filename, label):
         # The label or relation type string is the basename of the file
-        self.entity_str = os.path.splitext(os.path.basename(filename))[0]
+        if label:
+            self.entity_str = label
+        else:
+            self.entity_str = os.path.splitext(os.path.basename(filename))[0]
         # Input file handling
         self.infile = io.open(filename, 'rt')
+
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
         self.reader = csv.reader(self.infile, delimiter=configs.separator, skipinitialspace=True, quoting=configs.quoting)
@@ -162,7 +165,7 @@ class EntityFile(object):
             if len(pair) > 2:
                 raise CSVError("Field '%s' had %d colons" % field, len(field))
 
-            if (len(pair[0]) == 0): # Delete empty string in a case like ":LABEL"
+            if len(pair[0]) == 0: # Delete empty string in a case like ":LABEL"
                 del pair[0]
 
             if len(pair) < 2:

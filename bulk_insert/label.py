@@ -9,8 +9,8 @@ from exceptions import SchemaError
 
 # Handler class for processing label csv files.
 class Label(EntityFile):
-    def __init__(self, infile):
-        super(Label, self).__init__(infile)
+    def __init__(self, infile, label_str):
+        super(Label, self).__init__(infile, label_str)
         self.post_process_header()
 
     def post_process_header(self):

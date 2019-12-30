@@ -9,8 +9,8 @@ from exceptions import CSVError, SchemaError
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
-    def __init__(self, infile):
-        super(RelationType, self).__init__(infile)
+    def __init__(self, infile, type_str):
+        super(RelationType, self).__init__(infile, type_str)
         if self.column_count < 2:
             raise CSVError("Relation file '%s' should have at least 2 elements in header line."
                            % (infile.name))
@@ -57,8 +57,6 @@ class RelationType(EntityFile):
                 except KeyError as e:
                     print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
                     if configs.skip_invalid_edges is False:
-                        import ipdb
-                        ipdb.set_trace()
                         raise e
                     continue
                 fmt = "=QQ" # 8-byte unsigned ints for src and dest
