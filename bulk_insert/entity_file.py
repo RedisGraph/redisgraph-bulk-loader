@@ -12,10 +12,8 @@ class Type:
     BOOL = 1
     DOUBLE = 2
     STRING = 3
-    INTEGER = 4
+    LONG = 4
     ID = 5
-    LABEL = 6
-    TYPE = 7
     START_ID = 8
     END_ID = 9
     IGNORE = 10
@@ -29,15 +27,10 @@ def convert_schema_type(in_type):
                 'double': Type.DOUBLE,
                 'string': Type.STRING,
                 'string[]': Type.STRING, # TODO tmp
-                #  'integer': Type.INTEGER,
-                #  'int': Type.INTEGER,
-                #  'long': Type.INTEGER,
-                'integer': Type.DOUBLE,
-                'int': Type.DOUBLE,
-                'long': Type.DOUBLE,
+                'integer': Type.LONG,
+                'int': Type.LONG,
+                'long': Type.LONG,
                 'id': Type.ID,
-                'label': Type.LABEL,
-                'type': Type.TYPE,
                 'start_id': Type.START_ID,
                 'end_id': Type.END_ID
                 }[in_type]
@@ -72,6 +65,13 @@ def prop_to_binary(prop_val, prop_type):
         except:
             raise SchemaError("Could not parse '%s' as a double" % prop_val)
 
+    if prop_type is None or prop_type == Type.LONG:
+        try:
+            numeric_prop = int(float(prop_val))
+            return struct.pack(format_str + "q", Type.LONG, numeric_prop)
+        except:
+            raise SchemaError("Could not parse '%s' as a long" % prop_val)
+
     if prop_type is None or prop_type == Type.BOOL:
         # If field is 'false' or 'true', it is a boolean
         if prop_val.lower() == 'false':
@@ -86,7 +86,7 @@ def prop_to_binary(prop_val, prop_type):
         format_str += "%ds" % (len(encoded_str) + 1)
         return struct.pack(format_str, Type.STRING, encoded_str)
 
-    if prop_type in (Type.LABEL, Type.TYPE, Type.ID): # TODO tmp, treat as string for testing
+    if prop_type is Type.ID: # TODO tmp, treat as string for testing
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
         format_str += "%ds" % (len(encoded_str) + 1)
@@ -112,11 +112,8 @@ class EntityFile(object):
         self.binary_entities = []
         self.binary_size = 0 # size of binary token
 
-        # Extract data from header row.
-        self.convert_header()
-
-        self.count_entities() # number of entities/row in file.
-        #  next(self.reader) # Skip header for next read.
+        self.convert_header() # Extract data from header row.
+        self.count_entities() # Count number of entities/row in file.
 
     # Count number of rows in file.
     def count_entities(self):
@@ -171,7 +168,7 @@ class EntityFile(object):
             if len(pair) < 2:
                 self.types[idx] = convert_schema_type(pair[0].casefold())
                 self.skip_offsets[idx] = True
-                if self.types[idx] not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE, Type.LABEL): # TODO label
+                if self.types[idx] not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
                     # Any other field should have 2 elements
                     raise SchemaError("Each property in the header should be a colon-separated pair")
             else:
