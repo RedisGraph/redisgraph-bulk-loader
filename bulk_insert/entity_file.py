@@ -6,7 +6,6 @@ import struct
 import configs
 from exceptions import CSVError, SchemaError
 
-
 class Type:
     NULL = 0
     BOOL = 1
@@ -17,7 +16,6 @@ class Type:
     START_ID = 8
     END_ID = 9
     IGNORE = 10
-
 
 def convert_schema_type(in_type):
     try:
@@ -167,7 +165,6 @@ class EntityFile(object):
 
             if len(pair[0]) == 0: # Delete empty string in a case like ":LABEL"
                 del pair[0]
-
             if len(pair) < 2:
                 self.types[idx] = convert_schema_type(pair[0].casefold())
                 self.skip_offsets[idx] = True

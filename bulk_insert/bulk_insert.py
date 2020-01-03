@@ -3,7 +3,7 @@ from timeit import default_timer as timer
 import redis
 import click
 import configs
-import query_buffer as QueryBuffer
+from query_buffer import QueryBuffer
 from label import Label
 from relation_type import RelationType
 
@@ -23,18 +23,18 @@ def parse_schemas(cls, path_to_csv, csv_tuples):
 
 # For each input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
-def process_entities(entities):
+def process_entities(querybuffer, entities):
     for entity in entities:
-        entity.process_entities()
+        entity.process_entities(querybuffer)
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
-        if (QueryBuffer.buffer_size + added_size >= configs.max_buffer_size
-                or QueryBuffer.redis_token_count + len(entity.binary_entities) >= configs.max_token_count):
+        if (querybuffer.buffer_size + added_size >= configs.max_buffer_size
+                or querybuffer.redis_token_count + len(entity.binary_entities) >= configs.max_token_count):
             # Send and flush the buffer if appropriate
-            QueryBuffer.send_buffer()
+            querybuffer.send_buffer()
         # Add binary data to list and update all counts
-        QueryBuffer.redis_token_count += len(entity.binary_entities)
-        QueryBuffer.buffer_size += added_size
+        querybuffer.redis_token_count += len(entity.binary_entities)
+        querybuffer.buffer_size += added_size
 
 
 def Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, quoting):
@@ -53,16 +53,6 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_no
     configs.skip_invalid_edges = skip_invalid_edges
     configs.separator = separator
     configs.quoting = quoting
-
-
-def QueryBuf_Set(graphname, client, has_relations):
-    # Redis client and data for each query
-    QueryBuffer.client = client
-    QueryBuffer.graphname = graphname
-
-    # Create a node dictionary if we're building relations and as such require unique identifiers
-    if has_relations:
-        QueryBuffer.nodes = {}
 
 
 # Command-line arguments
@@ -116,20 +106,20 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    QueryBuf_Set(graph, client, relations is not None)
+    query_buffer = QueryBuffer(graph, client, relations is not None)
 
     # Read the header rows of each input CSV and save its schema.
     labels = parse_schemas(Label, nodes, nodes_with_label)
     reltypes = parse_schemas(RelationType, relations, relations_with_type)
 
-    process_entities(labels)
-    process_entities(reltypes)
+    process_entities(query_buffer,labels)
+    process_entities(query_buffer,reltypes)
 
     # Send all remaining tokens to Redis
-    QueryBuffer.send_buffer()
+    query_buffer.send_buffer()
 
     end_time = timer()
-    QueryBuffer.report_completion(end_time - start_time)
+    query_buffer.report_completion(end_time - start_time)
 
 
 if __name__ == '__main__':

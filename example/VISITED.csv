@@ -1,4 +1,4 @@
-src_person, dest_country, purpose
+src:start_id, dest:end_id, purpose:string
 Roi Lipman,USA,business
 Roi Lipman,Prague,both
 Roi Lipman,Japan,pleasure

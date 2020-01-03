@@ -1,4 +1,4 @@
-name,age,gender,status
+name:id,age:string,gender:string,status:string
 Roi Lipman,32,male,married
 Alon Fital,32,male,married
 Ailon Velger,32,male,married

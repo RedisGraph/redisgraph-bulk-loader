@@ -1,4 +1,4 @@
-src, dest, relation
+src:start_id, dest:end_id, relation:string
 Roi Lipman, Alon Fital, friend
 Roi Lipman, Ailon Velger, friend
 Roi Lipman, Ori Laslo, friend
