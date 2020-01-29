@@ -65,7 +65,8 @@ def prop_to_binary(prop_val, prop_type):
         except:
             raise SchemaError("Could not parse '%s' as a double" % prop_val)
 
-    if prop_type is None or prop_type == Type.LONG:
+    # TODO add support for non-integer ID types
+    if prop_type is None or prop_type == Type.LONG or prop_type == Type.ID:
         try:
             numeric_prop = int(float(prop_val))
             return struct.pack(format_str + "q", Type.LONG, numeric_prop)
@@ -81,12 +82,6 @@ def prop_to_binary(prop_val, prop_type):
 
     if prop_type is None or prop_type == Type.STRING:
         # If we've reached this point, the property is a string
-        encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
-        # Encoding len+1 adds a null terminator to the string
-        format_str += "%ds" % (len(encoded_str) + 1)
-        return struct.pack(format_str, Type.STRING, encoded_str)
-
-    if prop_type is Type.ID: # TODO tmp, treat as string for testing
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
         format_str += "%ds" % (len(encoded_str) + 1)
