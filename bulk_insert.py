@@ -296,7 +296,7 @@ def prop_to_binary(prop_val, type):
         return struct.pack(format_str, Type.NULL)
 
     # If field can be cast to a float, allow it
-    if type == None or type == Type.NUMERIC:
+    if type is None or type == Type.NUMERIC:
         try:
             numeric_prop = float(prop_val)
             if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
@@ -304,14 +304,14 @@ def prop_to_binary(prop_val, type):
         except:
             pass
 
-    if type == None or type == Type.BOOL:
+    if type is None or type == Type.BOOL:
         # If field is 'false' or 'true', it is a boolean
         if prop_val.lower() == 'false':
             return struct.pack(format_str + '?', Type.BOOL, False)
         elif prop_val.lower() == 'true':
             return struct.pack(format_str + '?', Type.BOOL, True)
 
-    if type == None or type == Type.STRING:
+    if type is None or type == Type.STRING:
         # If we've reached this point, the property is a string
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
