@@ -3,10 +3,10 @@
 [![GitHub issues](https://img.shields.io/github/release/RedisGraph/redisgraph-bulk-loader.svg)](https://github.com/RedisGraph/redisgraph-bulk-loader/releases/latest)
 [![Codecov](https://codecov.io/gh/RedisGraph/redisgraph-bulk-loader/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisGraph/redisgraph-bulk-loader)
 
-[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisGraph-blue)](https://groups.google.com/forum/#!forum/redisgraph)
+# redisgraph-bulk-loader
+[![Forum](https://img.shields.io/badge/Forum-RedisGraph-blue)](https://forum.redislabs.com/c/modules/redisgraph)
 [![Gitter](https://badges.gitter.im/RedisLabs/RedisGraph.svg)](https://gitter.im/RedisLabs/RedisGraph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-# redisgraph-bulk-loader
 A Python utility for building RedisGraph databases from CSV inputs
 
 ## Requirements
