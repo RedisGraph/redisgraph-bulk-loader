@@ -35,11 +35,10 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
       - run:
-          name: examples
+          name: test
           command: |
             . venv/bin/activate
-            redisgraph-bulk-loader -n ./example/Person.csv -n ./example/Country.csv -r ./example/KNOWS.csv -r ./example/VISITED.csv Visits
-            redisgraph-bulk-loader -n ./example2/Robots.csv Robots
+            python3 test/test.py
 
 workflows:
   version: 2
@@ -55,4 +54,4 @@ workflows:
               only:
                 - master
     jobs:
-      - build 
+      - build
