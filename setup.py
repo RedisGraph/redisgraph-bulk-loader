@@ -12,11 +12,12 @@ requirements = list(map(str.strip, open("requirements.txt").readlines()))
 
 setup(
     name='redisgraph-bulk-loader',
-    python_requires='>=3',
     version='0.8.1',
     description='RedisGraph Bulk Import Tool',
     long_description=read_all("README.md"),
+    long_description_content_type='text/markdown',
     url='https://github.com/redisgraph/redisgraph-bulk-loader',
+    python_requires='>=3',
     packages=find_packages(),
     install_requires=requirements,
     classifiers=[
