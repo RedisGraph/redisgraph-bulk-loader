@@ -4,9 +4,9 @@ import os
 import csv
 import redis
 import unittest
+from redisgraph import Graph
 from click.testing import CliRunner
 from bulk_insert import bulk_insert
-from redisgraph import Graph
 
 # Globals for validating example graph
 person_count = ""
@@ -488,11 +488,6 @@ class TestBulkInsert(unittest.TestCase):
 
         # Expect an error.
         self.validate_exception(res, "unable to parse")
-
-# Next:
-# Test quoting
-# Test skip-invalid
-# More error case tests?
 
 
 if __name__ == '__main__':
