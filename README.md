@@ -18,11 +18,11 @@ https://oss.redislabs.com/redisgraph/
 ## Installation
 The bulk loader script's dependencies can be resolved using pip:
 ```
-pip install --user -r requirements.txt
+pip install git+https://github.com/RedisGraph/redisgraph-bulk-loader.git@master
 ```
 
 ## Usage
-bulk_insert.py GRAPHNAME [OPTIONS]
+redisgraph-bulk-insert GRAPHNAME [OPTIONS]
 
 | Flags   | Extended flags        |    Parameter                                                    |
 |---------|-----------------------|-----------------------------------------------------------------|
@@ -44,7 +44,7 @@ The nodes and relationship flags should be specified once per input file.
 The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` should only be specified if the memory overhead of graph creation is too high. The bulk loader builds large graphs by sending binary tokens (each of which holds multiple nodes or relations) to Redis in batches. By lowering these limits from their defaults, the size of each transmission to Redis is lowered and fewer entities are held in memory, at the expense of a longer overall runtime.
 
 ```
-python bulk_insert.py GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
+redisgraph-bulk-insert GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
 ```
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this example, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
 
@@ -52,7 +52,7 @@ The default behaviour is to infer the type for each row based on the value of ea
 EG, to explicitly set to string.
 
 ```
-python3 bulk_insert.py ROBOTS -f '{"Robots" : [3]}' -q1 -n example2/Robots.csv 
+redisgraph-bulk-insert ROBOTS -f '{"Robots" : [3]}' -q1 -n example2/Robots.csv 
 ```
 
 Notice that when -f isn't used, the robot name "30165" would be inserted as a number rather than a string which causes problems in RedisGraph when searching. 
