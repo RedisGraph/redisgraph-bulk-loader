@@ -6,7 +6,7 @@ import redis
 import unittest
 from redisgraph import Graph
 from click.testing import CliRunner
-from bulk_insert import bulk_insert
+from redisgraph_bulk_loader.bulk_insert import bulk_insert
 
 # Globals for validating example graph
 person_count = ""

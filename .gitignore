@@ -85,5 +85,12 @@ __pycache__/
 # C extensions
 *.so
 
+# virtualenv
+.venv
+venv/
+ENV/
+
 # Distribution / packaging
 .Python
+dist/
+*.egg-info/
