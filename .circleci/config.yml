@@ -2,7 +2,7 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
@@ -35,11 +35,15 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
       - run:
-          name: examples
+          name: build dist
+          command: python setup.py sdist
+
+      - run:
+          name: run tests
           command: |
             . venv/bin/activate
-            redisgraph-bulk-loader -n ./example/Person.csv -n ./example/Country.csv -r ./example/KNOWS.csv -r ./example/VISITED.csv Visits
-            redisgraph-bulk-loader -n ./example2/Robots.csv Robots
+            pip install git+https://github.com/RedisGraph/redisgraph-py.git@master
+            python -m unittest test/test_bulk_loader.py
 
 workflows:
   version: 2
@@ -55,4 +59,4 @@ workflows:
               only:
                 - master
     jobs:
-      - build 
+      - build
