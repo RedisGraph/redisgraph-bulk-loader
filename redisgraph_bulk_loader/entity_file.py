@@ -3,7 +3,7 @@ import io
 import csv
 import math
 import struct
-import configs
+from config import Config
 from exceptions import CSVError, SchemaError
 
 
@@ -104,7 +104,7 @@ class EntityFile(object):
 
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter=configs.separator, skipinitialspace=True, quoting=configs.quoting)
+        self.reader = csv.reader(self.infile, delimiter=Config.separator, skipinitialspace=True, quoting=Config.quoting)
 
         self.packed_header = b''
         self.binary_entities = []
@@ -126,7 +126,7 @@ class EntityFile(object):
         # Each row should have the same number of fields
         if len(row) != self.column_count:
             raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
-                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), configs.separator.join(row)))
+                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), Config.separator.join(row)))
 
     # If part of a CSV file was sent to Redis, delete the processed entities and update the binary size
     def reset_partial_binary(self):

@@ -26,7 +26,7 @@ def row_count(in_csv):
     return idx
 
 
-class TestBulkInsert(unittest.TestCase):
+class TestBulkLoader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """

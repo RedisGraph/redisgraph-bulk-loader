@@ -1,8 +1,11 @@
+import os
 import sys
-from timeit import default_timer as timer
 import redis
 import click
-import configs
+from timeit import default_timer as timer
+
+sys.path.append(os.path.dirname(__file__))
+from config import Config
 import query_buffer as QueryBuffer
 from label import Label
 from relation_type import RelationType
@@ -28,8 +31,8 @@ def process_entities(entities):
         entity.process_entities()
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
-        if (QueryBuffer.buffer_size + added_size >= configs.max_buffer_size
-                or QueryBuffer.redis_token_count + len(entity.binary_entities) >= configs.max_token_count):
+        if (QueryBuffer.buffer_size + added_size >= Config.max_buffer_size
+                or QueryBuffer.redis_token_count + len(entity.binary_entities) >= Config.max_token_count):
             # Send and flush the buffer if appropriate
             QueryBuffer.send_buffer()
         # Add binary data to list and update all counts
@@ -42,17 +45,17 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_no
     # 1024 * 1024 is the hard-coded Redis maximum. We'll set a slightly lower limit so
     # that we can safely ignore tokens that aren't binary strings
     # ("GRAPH.BULK", "BEGIN", graph name, counts)
-    configs.max_token_count = min(max_token_count, 1024 * 1023)
+    Config.max_token_count = min(max_token_count, 1024 * 1023)
     # Maximum size in bytes per query
-    configs.max_buffer_size = max_buffer_size * 1000000
+    Config.max_buffer_size = max_buffer_size * 1000000
     # Maximum size in bytes per token
     # 512 megabytes is a hard-coded Redis maximum
-    configs.max_token_size = min(max_token_size * 1000000, 512 * 1000000)
+    Config.max_token_size = min(max_token_size * 1000000, 512 * 1000000)
 
-    configs.skip_invalid_nodes = skip_invalid_nodes
-    configs.skip_invalid_edges = skip_invalid_edges
-    configs.separator = separator
-    configs.quoting = quoting
+    Config.skip_invalid_nodes = skip_invalid_nodes
+    Config.skip_invalid_edges = skip_invalid_edges
+    Config.separator = separator
+    Config.quoting = quoting
 
 
 def QueryBuf_Set(graphname, client, has_relations):

@@ -1,7 +1,7 @@
 import re
 import struct
 import click
-import configs
+from config import Config
 import query_buffer as QueryBuffer
 from entity_file import Type, EntityFile
 from exceptions import CSVError, SchemaError
@@ -56,7 +56,7 @@ class RelationType(EntityFile):
                     dest = QueryBuffer.nodes[end_id]
                 except KeyError as e:
                     print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
-                    if configs.skip_invalid_edges is False:
+                    if Config.skip_invalid_edges is False:
                         raise e
                     continue
                 fmt = "=QQ" # 8-byte unsigned ints for src and dest
@@ -64,7 +64,7 @@ class RelationType(EntityFile):
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
-                if self.binary_size + row_binary_len > configs.max_token_size:
+                if self.binary_size + row_binary_len > Config.max_token_size:
                     QueryBuffer.reltypes.append(self.to_binary())
                     QueryBuffer.send_buffer()
                     self.reset_partial_binary()
