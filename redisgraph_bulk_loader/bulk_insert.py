@@ -40,7 +40,7 @@ def process_entities(entities):
         QueryBuffer.buffer_size += added_size
 
 
-def Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, quoting):
+def Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, quoting):
     # Maximum number of tokens per query
     # 1024 * 1024 is the hard-coded Redis maximum. We'll set a slightly lower limit so
     # that we can safely ignore tokens that aren't binary strings
@@ -52,6 +52,7 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_no
     # 512 megabytes is a hard-coded Redis maximum
     Config.max_token_size = min(max_token_size * 1000000, 512 * 1000000)
 
+    Config.enforce_schema = enforce_schema
     Config.skip_invalid_nodes = skip_invalid_nodes
     Config.skip_invalid_edges = skip_invalid_edges
     Config.separator = separator
@@ -81,19 +82,21 @@ def QueryBuf_Set(graphname, client, has_relations):
 @click.option('--relations', '-r', multiple=True, help='Path to relation csv file')
 @click.option('--relations-with-type', '-R', nargs=2, multiple=True, help='Relation type string followed by path to relation csv file')
 @click.option('--separator', '-o', default=',', help='Field token separator in csv file')
+# Schema options
+@click.option('--enforce-schema', '-d', default=False, is_flag=True, help='Enforce the schema described in CSV header rows')
+@click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
+@click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
+@click.option('--quote', '-q', default=3, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
-@click.option('--quote', '-q', default=3, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
-@click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
-@click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
-def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations, relations_with_type, separator, max_token_count, max_buffer_size, max_token_size, quote, skip_invalid_nodes, skip_invalid_edges):
+def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, quote, max_token_count, max_buffer_size, max_token_size):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
     # Initialize configurations with command-line arguments
-    Config_Set(max_token_count, max_buffer_size, max_token_size, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
+    Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
 
     start_time = timer()
     # Attempt to connect to Redis server

@@ -25,18 +25,23 @@ pip install git+https://github.com/RedisGraph/redisgraph-bulk-loader.git@master
 ## Usage
 redisgraph-bulk-insert GRAPHNAME [OPTIONS]
 
-| Flags   | Extended flags        |    Parameter                                                    |
-|---------|-----------------------|-----------------------------------------------------------------|
-|  -h     | --host TEXT           |    Redis server host (default: 127.0.0.1)                       |
-|  -p     | --port INTEGER        |    Redis server port   (default: 6379)                          |
-|  -a     | --password TEXT       |    Redis server password                                        |
-|  -n     | --nodes TEXT          |    path to node csv file [required]                             |
-|  -r     | --relations TEXT      |    path to relationship csv file                                |
-|  -t     | --max-token-count INT |    max number of tokens sent in each Redis query (default 1024) |
-|  -b     | --max-buffer-size INT |    max batch size (MBs) of each Redis query (default 4096)      |
-|  -c     | --max-token-size INT  |    max size (MBs) of each token sent to Redis (default 500)     |
-|  -q     | --quote               |    the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3 |
-|  -f     | --field-types         |    json to set explicit types for each field, format {<label>:[<col1 type>, <col2 type> ...]} where type can be 0(null),1(bool),2(numeric),3(string)       |
+| Flags | Extended flags             |                                              Parameter                                               |
+|:-----:|----------------------------|:----------------------------------------------------------------------------------------------------:|
+|  -h   | --host TEXT                |                                Redis server host (default: 127.0.0.1)                                |
+|  -p   | --port INTEGER             |                                  Redis server port (default: 6379)                                   |
+|  -a   | --password TEXT            |                                        Redis server password                                         |
+|  -n   | --nodes TEXT               |                      Path to Node CSV file with the filename as the Node Label                       |
+|  -N   | --nodes-with-label TEXT    |                             Node Label followed by path to Node CSV file                             |
+|  -r   | --relations TEXT           |               Path to Relationship CSV file with the filename as the Relationship Type               |
+|  -R   | --relations-with-type TEXT |                     Relationship Type followed by path to relationship CSV file                      |
+|  -o   | --separator CHAR           |                          Field token separator in CSV files (default comma)                          |
+|  -d   | --enforce-schema           |               Requires each cell to adhere to the schema defined in the schema header                |
+|  -s   | --skip-invalid-nodes       |            Skip nodes that reuse previously defined IDs instead of exiting with an error             |
+|  -e   | --skip-invalid-edges       |            Skip edges that use invalid IDs for endpoints instead of exiting with an error            |
+|  -q   | --quote INT                | The quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3 |
+|  -t   | --max-token-count INT      |            (Debug argument) Max number of tokens sent in each Redis query (default 1024)             |
+|  -b   | --max-buffer-size INT      |               (Debug argument) Max batch size (MBs) of each Redis query (default 4096)               |
+|  -c   | --max-token-size INT       |              (Debug argument) Max size (MBs) of each token sent to Redis (default 500)               |
 
 
 The only required arguments are the name to give the newly-created graph (which can appear anywhere) and at least one node CSV file.
