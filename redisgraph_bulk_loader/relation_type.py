@@ -15,11 +15,25 @@ class RelationType(EntityFile):
             raise CSVError("Relation file '%s' should have at least 2 elements in header line."
                            % (infile.name))
 
-        self.start_id = -1
-        self.end_id = -1
-        self.post_process_header()
+        self.start_id = 0
+        self.end_id = 1
+        #  self.post_process_header()
 
-    def post_process_header(self):
+    def process_schemaless_header(self, header):
+        # The first column is the source ID and the second is the destination ID.
+        self.types[0] = Type.START_ID
+        self.types[1] = Type.END_ID
+        self.skip_offsets[0] = True
+        self.skip_offsets[1] = True
+        self.start_namespace = None
+        self.end_namespace = None
+
+        #  self.types[2:] = [Type.INFERRED] * self.column_count - 2
+
+        for idx, field in enumerate(header):
+            self.column_names[idx] = field
+
+    def post_process_header(self, header):
         # Can interleave these tasks if preferred.
         if self.types.count(Type.START_ID) != 1:
             raise SchemaError("Relation file '%s' should have exactly one START_ID column."
@@ -31,7 +45,6 @@ class RelationType(EntityFile):
         self.start_id = self.types.index(Type.START_ID)
         self.end_id = self.types.index(Type.END_ID)
         # Capture namespaces of start and end IDs if provided
-        header = next(self.reader)
         start_match = re.search(r"\((\w+)\)", header[self.start_id])
         if start_match:
             self.start_namespace = start_match.group(1)

@@ -17,6 +17,7 @@ class Type:
     START_ID = 8
     END_ID = 9
     IGNORE = 10
+    INFERRED = 11
 
 
 def convert_schema_type(in_type):
@@ -57,30 +58,34 @@ def prop_to_binary(prop_val, prop_type):
         return struct.pack(format_str, Type.NULL)
 
     # If field can be cast to a float, allow it
-    if prop_type is None or prop_type == Type.DOUBLE:
+    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.DOUBLE:
         try:
             numeric_prop = float(prop_val)
             if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
                 return struct.pack(format_str + "d", Type.DOUBLE, numeric_prop)
         except:
-            raise SchemaError("Could not parse '%s' as a double" % prop_val)
+            # TODO ugly, rethink
+            if prop_type == Type.DOUBLE:
+                raise SchemaError("Could not parse '%s' as a double" % prop_val)
 
-    # TODO add support for non-integer ID types
-    if prop_type is None or prop_type == Type.LONG or prop_type == Type.ID:
+    #  if prop_type is None or prop_type == Type.LONG or prop_type == Type.ID:
+    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.LONG:
         try:
             numeric_prop = int(float(prop_val))
             return struct.pack(format_str + "q", Type.LONG, numeric_prop)
         except:
-            raise SchemaError("Could not parse '%s' as a long" % prop_val)
+            # TODO ugly, rethink
+            if prop_type == Type.LONG:
+                raise SchemaError("Could not parse '%s' as a long" % prop_val)
 
-    if prop_type is None or prop_type == Type.BOOL:
+    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.BOOL:
         # If field is 'false' or 'true', it is a boolean
         if prop_val.lower() == 'false':
             return struct.pack(format_str + '?', Type.BOOL, False)
         elif prop_val.lower() == 'true':
             return struct.pack(format_str + '?', Type.BOOL, True)
 
-    if prop_type is None or prop_type == Type.STRING:
+    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.STRING:
         # If we've reached this point, the property is a string
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
@@ -112,6 +117,7 @@ class EntityFile(object):
 
         self.convert_header() # Extract data from header row.
         self.count_entities() # Count number of entities/row in file.
+        next(self.reader) # Skip the header row.
 
     # Count number of rows in file.
     def count_entities(self):
@@ -147,33 +153,56 @@ class EntityFile(object):
             args.append(prop)
         return struct.pack(fmt, *args)
 
-    # Extract column names and types from a header row
-    def convert_header(self):
-        header = next(self.reader)
-        self.column_count = len(header)
-        self.column_names = [None] * self.column_count   # Property names of every column.
-        self.types = [None] * self.column_count          # Value type of every column.
-        self.skip_offsets = [False] * self.column_count  # Whether column at any offset should not be stored as a property.
-
+    def convert_header_with_schema(self, header):
         for idx, field in enumerate(header):
             pair = field.split(':')
+
+            # Multiple colons found in column name, emit error.
+            # TODO might need to check for backtick escapes
             if len(pair) > 2:
                 raise CSVError("Field '%s' had %d colons" % field, len(field))
+
+            # No colon in name, this column does not have an enforced data type.
+            if len(pair) == 1:
+                self.types[idx] = Type.INFERRED
+                self.column_names[idx] = pair[0]
+                if idx == 0:
+                    self.types[idx] = Type.ID # TODO problematic
+                continue
 
             if len(pair[0]) == 0: # Delete empty string in a case like ":LABEL"
                 del pair[0]
 
-            if len(pair) < 2:
+            if len(pair) == 1:
+                # We have a type, but no column name.
+                # TODO fold into above case?
                 self.types[idx] = convert_schema_type(pair[0].casefold())
                 self.skip_offsets[idx] = True
                 if self.types[idx] not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
                     # Any other field should have 2 elements
                     raise SchemaError("Each property in the header should be a colon-separated pair")
             else:
+                # We have a column name and a type.
                 self.column_names[idx] = pair[0]
                 self.types[idx] = convert_schema_type(pair[1].casefold())
                 if self.types[idx] in (Type.START_ID, Type.END_ID, Type.IGNORE):
                     self.skip_offsets[idx] = True
+
+    def convert_header(self):
+        header = next(self.reader)
+        self.column_count = len(header)
+        self.column_names = [None] * self.column_count   # Property names of every column.
+        self.types = [Type.INFERRED] * self.column_count # Value type of every column.
+        self.skip_offsets = [False] * self.column_count  # Whether column at any offset should not be stored as a property.
+
+        if Config.enforce_schema:
+            # Use generic logic to convert the header with schema.
+            self.convert_header_with_schema(header)
+            # The subclass will perform post-processing.
+            self.post_process_header(header)
+        else:
+            # The subclass will process the header itself
+            self.process_schemaless_header(header)
 
         # The number of properties is equal to the number of non-skipped columns.
         self.prop_count = self.skip_offsets.count(False)

@@ -10,18 +10,29 @@ from exceptions import SchemaError
 # Handler class for processing label csv files.
 class Label(EntityFile):
     def __init__(self, infile, label_str):
+        self.id_namespace = None
         super(Label, self).__init__(infile, label_str)
-        self.post_process_header()
+        #  self.post_process_header()
 
-    def post_process_header(self):
+    def process_schemaless_header(self, header):
+        # The first column is the ID.
+        # If this starts with an underscore, it is not a property and should not be introduced to the graph.
+        self.types[0] = Type.ID
+        self.id = 0
+        if header[0][0] == '_':
+            self.skip_offsets[0] = True
+        #  self.types[1:] = [Type.INFERRED] * self.column_count - 1
+
+        for idx, field in enumerate(header):
+            self.column_names[idx] = field
+
+    def post_process_header(self, header):
         # Verify that exactly one field is labeled ID.
         if self.types.count(Type.ID) != 1:
             raise SchemaError("Node file '%s' should have exactly one ID column."
                               % (self.infile.name))
-        header = next(self.reader)
         self.id = self.types.index(Type.ID) # Track the offset containing the node ID.
         id_field = header[self.id]
-        self.id_namespace = None
         # If the ID field specifies an ID namespace in parentheses like "val:ID(NAMESPACE)", capture the namespace.
         match = re.search(r"\((\w+)\)", id_field)
         if match:
