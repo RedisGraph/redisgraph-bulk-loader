@@ -122,7 +122,7 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    QueryBuf_Set(graph, client, relations is not None)
+    QueryBuf_Set(graph, client, any(relations))
 
     # Read the header rows of each input CSV and save its schema.
     labels = parse_schemas(Label, nodes, nodes_with_label)
