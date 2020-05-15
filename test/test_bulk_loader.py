@@ -195,7 +195,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should report 3 node creations and 2 edge creations
         self.assertEqual(res.exit_code, 0)
@@ -227,7 +227,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should fail because a node identifier is reused
         self.assertNotEqual(res.exit_code, 0)
@@ -236,7 +236,7 @@ class TestBulkLoader(unittest.TestCase):
         # Run the script again without creating relations
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should succeed and create 3 nodes
         self.assertEqual(res.exit_code, 0)
@@ -262,7 +262,7 @@ class TestBulkLoader(unittest.TestCase):
                                           '--relations', knows_file,
                                           '--relations', visited_file,
                                           '--max-token-count', 1,
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should report 27 overall node creations and 48 edge creations.
         self.assertEqual(res.exit_code, 0)
@@ -299,7 +299,7 @@ class TestBulkLoader(unittest.TestCase):
 
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should fail because a row has the wrong number of fields
         self.validate_exception(res, "Expected 2 columns")
@@ -318,7 +318,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should fail because a row has the wrong number of fields
         self.validate_exception(res, "should have at least 2 elements")
@@ -331,7 +331,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should fail because an invalid node identifier was used
         self.validate_exception(res, "fakeidentifier")
@@ -357,7 +357,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
         self.assertIn('3 nodes created', res.output)
@@ -391,7 +391,7 @@ class TestBulkLoader(unittest.TestCase):
 
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         assert res.exit_code == 0
         assert '9 nodes created' in res.output
@@ -429,7 +429,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--separator', '|',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
@@ -455,7 +455,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--field-types', '{"nodes":[3, 2]}',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
@@ -484,7 +484,7 @@ class TestBulkLoader(unittest.TestCase):
         # Try to parse all cells as numerics
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--field-types', '{"nodes":[2]}',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # Expect an error.
         self.validate_exception(res, "unable to parse")
