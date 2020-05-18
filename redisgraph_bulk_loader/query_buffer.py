@@ -1,72 +1,64 @@
-# QueryBuffer is the singleton module that processes input CSVs and emits their binary formats to the Redis client.
+class QueryBuffer:
+    def __init__(self, graphname, client, store_identifiers):
+        self.nodes = None
+        self.top_node_id = 0
 
-nodes = None
-top_node_id = 0
+        # Redis client and data for each query
+        self.client = client
+        self.graphname = graphname
 
-# Redis client and data for each query
-client = None
+        # Create a node dictionary if we're building relations and as such require unique identifiers
+        if store_identifiers:
+            self.nodes = {}
+        else:
+            self.nodes = None
 
-# Sizes for buffer currently being constructed
-redis_token_count = 0
-buffer_size = 0
+        # Sizes for buffer currently being constructed
+        self.redis_token_count = 0
+        self.buffer_size = 0
 
-# The first query should include a "BEGIN" token
-graphname = ""
-initial_query = True
+        # The first query should include a "BEGIN" token
+        self.graphname = graphname
+        self.initial_query = True
 
-node_count = 0
-relation_count = 0
+        self.node_count = 0
+        self.relation_count = 0
 
-labels = [] # List containing all pending Label objects
-reltypes = [] # List containing all pending RelationType objects
+        self.labels = [] # List containing all pending Label objects
+        self.reltypes = [] # List containing all pending RelationType objects
 
-nodes_created = 0 # Total number of nodes created
-relations_created = 0 # Total number of relations created
+        self.nodes_created = 0 # Total number of nodes created
+        self.relations_created = 0 # Total number of relations created
 
+    def send_buffer(self):
+        """Send all pending inserts to Redis"""
+        # Do nothing if we have no entities
+        if self.node_count == 0 and self.relation_count == 0:
+            return
 
-# Send all pending inserts to Redis
-def send_buffer():
-    global initial_query
-    global nodes_created
-    global relations_created
+        args = [self.node_count, self.relation_count, len(self.labels), len(self.reltypes)] + self.labels + self.reltypes
+        # Prepend a "BEGIN" token if this is the first query
+        if self.initial_query:
+            args.insert(0, "BEGIN")
+            self.initial_query = False
 
-    # Do nothing if we have no entities
-    if node_count == 0 and relation_count == 0:
-        return
+        result = self.client.execute_command("GRAPH.BULK", self.graphname, *args)
+        stats = result.split(', '.encode())
+        self.nodes_created += int(stats[0].split(' '.encode())[0])
+        self.relations_created += int(stats[1].split(' '.encode())[0])
 
-    args = [node_count, relation_count, len(labels), len(reltypes)] + labels + reltypes
-    # Prepend a "BEGIN" token if this is the first query
-    if initial_query:
-        args.insert(0, "BEGIN")
-        initial_query = False
+        self.clear_buffer()
 
-    result = client.execute_command("GRAPH.BULK", graphname, *args)
-    stats = result.split(', '.encode())
-    nodes_created += int(stats[0].split(' '.encode())[0])
-    relations_created += int(stats[1].split(' '.encode())[0])
+    # Delete all entities that have been inserted
+    def clear_buffer(self):
+        del self.labels[:]
+        del self.reltypes[:]
 
-    clear_buffer()
+        self.redis_token_count = 0
+        self.buffer_size = 0
+        self.node_count = 0
+        self.relation_count = 0
 
-
-# Delete all entities that have been inserted
-def clear_buffer():
-    global redis_token_count
-    global buffer_size
-    global node_count
-    global relation_count
-    global labels
-    global reltypes
-
-    redis_token_count = 0
-    buffer_size = 0
-
-    # All constructed entities have been inserted, so clear buffers
-    node_count = 0
-    relation_count = 0
-    del labels[:]
-    del reltypes[:]
-
-
-def report_completion(runtime):
-    print("Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"
-          % (graphname, nodes_created, relations_created, runtime))
+    def report_completion(self, runtime):
+        print("Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"
+              % (self.graphname, self.nodes_created, self.relations_created, runtime))

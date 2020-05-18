@@ -299,7 +299,7 @@ class TestBulkLoader(unittest.TestCase):
 
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname], catch_exceptions=False)
+                                          graphname])
 
         # The script should fail because a row has the wrong number of fields
         self.validate_exception(res, "Expected 2 columns")
@@ -318,7 +318,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname], catch_exceptions=False)
+                                          graphname])
 
         # The script should fail because a row has the wrong number of fields
         self.validate_exception(res, "should have at least 2 elements")
@@ -331,7 +331,7 @@ class TestBulkLoader(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname], catch_exceptions=False)
+                                          graphname])
 
         # The script should fail because an invalid node identifier was used
         self.validate_exception(res, "fakeidentifier")
