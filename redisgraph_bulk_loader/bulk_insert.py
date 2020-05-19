@@ -88,10 +88,14 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
+    start_time = timer()
+
     # Initialize configurations with command-line arguments
     Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
 
-    start_time = timer()
+    # If relations are being built, we must store unique node identifiers to later resolve endpoints.
+    Config.store_node_identifiers = any(relations) or any(relations_with_type)
+
     # Attempt to connect to Redis server
     try:
         client = redis.StrictRedis(host=host, port=port, password=password)
@@ -115,9 +119,7 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    # If relations are being built, we must store unique node identifiers to later resolve endpoints.
-    store_node_identifiers = any(relations)
-    query_buf = QueryBuffer(graph, client, store_node_identifiers)
+    query_buf = QueryBuffer(graph, client)
 
     # Read the header rows of each input CSV and save its schema.
     labels = parse_schemas(Label, query_buf, nodes, nodes_with_label)

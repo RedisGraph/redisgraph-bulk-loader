@@ -6,5 +6,6 @@ class Config:
     enforce_schema = False
     skip_invalid_nodes = False
     skip_invalid_edges = False
+    store_node_identifiers = False
     separator = ','
     quoting = 3

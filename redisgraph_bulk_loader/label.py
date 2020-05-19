@@ -6,8 +6,8 @@ from entity_file import Type, EntityFile
 from exceptions import SchemaError
 
 
-# Handler class for processing label csv files.
 class Label(EntityFile):
+    """Handler class for processing Label CSV files."""
     def __init__(self, query_buffer, infile, label_str):
         self.id_namespace = None
         self.query_buffer = query_buffer
@@ -38,28 +38,34 @@ class Label(EntityFile):
         if match:
             self.id_namespace = match.group(1)
 
+    def update_node_dictionary(self, identifier):
+        """Add identifier->ID pair to dictionary if we are building relations"""
+        if identifier in self.query_buffer.nodes:
+            sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
+                             % (identifier, self.infile.name, self.reader.line_num))
+            if Config.skip_invalid_nodes is False:
+                sys.exit(1)
+        self.query_buffer.nodes[identifier] = self.query_buffer.top_node_id
+        self.query_buffer.top_node_id += 1
+
     def process_entities(self):
         entities_created = 0
         with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str) as reader:
             for row in reader:
                 self.validate_row(row)
-                # Add identifier->ID pair to dictionary if we are building relations
-                if self.query_buffer.nodes is not None:
+
+                # Update the node identifier dictionary if necessary
+                if Config.store_node_identifiers:
                     id_field = row[self.id]
                     if self.id_namespace is not None:
                         id_field = self.id_namespace + '.' + str(id_field)
+                    self.update_node_dictionary(id_field)
 
-                    if id_field in self.query_buffer.nodes:
-                        sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
-                                         % (row[self.id], self.infile.name, self.reader.line_num))
-                        if Config.skip_invalid_nodes is False:
-                            sys.exit(1)
-                    self.query_buffer.nodes[id_field] = self.query_buffer.top_node_id
-                    self.query_buffer.top_node_id += 1
                 row_binary = self.pack_props(row)
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
+                # TODO how much of this can be made uniform w/ relations and moved to Querybuffer?
                 if self.binary_size + row_binary_len > Config.max_token_size:
                     self.query_buffer.labels.append(self.to_binary())
                     self.query_buffer.send_buffer()
