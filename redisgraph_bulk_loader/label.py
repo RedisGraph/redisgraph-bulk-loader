@@ -27,6 +27,10 @@ class Label(EntityFile):
             self.column_names[idx] = field
 
     def post_process_header(self, header):
+        # No ID field is required if we're only inserting nodes.
+        if Config.store_node_identifiers is False:
+            return
+
         # Verify that exactly one field is labeled ID.
         if self.types.count(Type.ID) != 1:
             raise SchemaError("Node file '%s' should have exactly one ID column."

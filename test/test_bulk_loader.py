@@ -442,52 +442,52 @@ class TestBulkLoader(unittest.TestCase):
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
 
-    #  def test09_field_types(self):
-        #  """Validate that the field-types argument is respected"""
+    def test09_schema(self):
+        """Validate that the enforce-schema argument is respected"""
 
-        #  graphname = "tmpgraph7"
-        #  with open('/tmp/nodes.tmp', mode='w') as csv_file:
-            #  out = csv.writer(csv_file)
-            #  out.writerow(['str_col', 'num_col'])
-            #  out.writerow([0, 0])
-            #  out.writerow([1, 1])
+        graphname = "tmpgraph7"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['str_col:STRING', 'num_col:INT'])
+            out.writerow([0, 0])
+            out.writerow([1, 1])
 
-        #  runner = CliRunner()
-        #  res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          #  '--field-types', '{"nodes":[3, 2]}',
-                                          #  graphname], catch_exceptions=False)
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
 
-        #  self.assertEqual(res.exit_code, 0)
-        #  self.assertIn('2 nodes created', res.output)
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('2 nodes created', res.output)
 
-        #  graph = Graph(graphname, self.redis_con)
-        #  query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col ORDER BY a.num_col')
-        #  expected_result = [['0', 0],
-                           #  ['1', 1]]
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col ORDER BY a.num_col')
+        expected_result = [['0', 0],
+                           ['1', 1]]
 
-        #  # The graph should have the correct types for all properties
-        #  self.assertEqual(query_result.result_set, expected_result)
+        # The graph should have the correct types for all properties
+        self.assertEqual(query_result.result_set, expected_result)
 
-    #  def test10_invalid_field_types(self):
-        #  """Validate that errors are emitted properly with an invalid field-types argument."""
+    def test10_invalid_schema(self):
+        """Validate that errors are emitted properly with an invalid CSV schema."""
 
-        #  graphname = "expect_fail"
-        #  with open('/tmp/nodes.tmp', mode='w') as csv_file:
-            #  out = csv.writer(csv_file)
-            #  out.writerow(['num_col'])
-            #  out.writerow([5])
-            #  out.writerow([10])
-            #  out.writerow(['str'])
-            #  out.writerow([15])
+        graphname = "expect_fail"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['num_col:INT'])
+            out.writerow([5])
+            out.writerow([10])
+            out.writerow(['str'])
+            out.writerow([15])
 
-        #  runner = CliRunner()
-        #  # Try to parse all cells as numerics
-        #  res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          #  '--field-types', '{"nodes":[2]}',
-                                          #  graphname], catch_exceptions=False)
+        runner = CliRunner()
+        # Try to parse all cells as integers
+        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          '--enforce-schema',
+                                          graphname])
 
-        #  # Expect an error.
-        #  self.validate_exception(res, "unable to parse")
+        # Expect an error.
+        self.validate_exception(res, "Could not parse")
 
 
 if __name__ == '__main__':

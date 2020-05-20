@@ -33,6 +33,7 @@ class QueryBuffer:
         self.nodes_created = 0 # Total number of nodes created
         self.relations_created = 0 # Total number of relations created
 
+    # TODO consider using a queue to send commands asynchronously
     def send_buffer(self):
         """Send all pending inserts to Redis"""
         # Do nothing if we have no entities

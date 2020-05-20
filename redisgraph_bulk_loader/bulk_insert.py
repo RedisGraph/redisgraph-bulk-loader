@@ -11,7 +11,6 @@ from label import Label
 from relation_type import RelationType
 
 
-
 def parse_schemas(cls, query_buf, path_to_csv, csv_tuples):
     schemas = [None] * (len(path_to_csv) + len(csv_tuples))
     for idx, in_csv in enumerate(path_to_csv):
@@ -60,8 +59,6 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema,
     Config.quoting = quoting
 
 
-
-
 # Command-line arguments
 @click.command()
 @click.argument('graph')
@@ -70,7 +67,7 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema,
 @click.option('--port', '-p', default=6379, help='Redis server port')
 @click.option('--password', '-a', default=None, help='Redis server password')
 # CSV file paths
-@click.option('--nodes', '-n', required=True, multiple=True, help='Path to node csv file')
+@click.option('--nodes', '-n', multiple=True, help='Path to node csv file')
 @click.option('--nodes-with-label', '-N', nargs=2, multiple=True, help='Label string followed by path to node csv file')
 @click.option('--relations', '-r', multiple=True, help='Path to relation csv file')
 @click.option('--relations-with-type', '-R', nargs=2, multiple=True, help='Relation type string followed by path to relation csv file')
@@ -87,6 +84,9 @@ def Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema,
 def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, quote, max_token_count, max_buffer_size, max_token_size):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
+
+    if not (any(nodes) or any(nodes_with_label)):
+        raise Exception("At least one node file must be specified.")
 
     start_time = timer()
 

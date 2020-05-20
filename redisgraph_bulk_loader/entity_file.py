@@ -26,6 +26,7 @@ def convert_schema_type(in_type):
                 'null': Type.NULL,
                 'boolean': Type.BOOL,
                 'double': Type.DOUBLE,
+                'float': Type.DOUBLE,
                 'string': Type.STRING,
                 'string[]': Type.STRING, # TODO tmp
                 'integer': Type.LONG,
@@ -33,7 +34,8 @@ def convert_schema_type(in_type):
                 'long': Type.LONG,
                 'id': Type.ID,
                 'start_id': Type.START_ID,
-                'end_id': Type.END_ID
+                'end_id': Type.END_ID,
+                'ignore': Type.IGNORE
                 }[in_type]
     except KeyError:
         # TODO tmp
