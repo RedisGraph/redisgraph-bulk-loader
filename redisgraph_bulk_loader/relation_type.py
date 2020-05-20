@@ -21,8 +21,6 @@ class RelationType(EntityFile):
             raise CSVError("Relation file '%s' should have at least 2 elements in header line."
                            % (self.infile.name))
         # The first column is the source ID and the second is the destination ID.
-        self.types[0] = Type.START_ID
-        self.types[1] = Type.END_ID
         self.start_namespace = None
         self.end_namespace = None
 

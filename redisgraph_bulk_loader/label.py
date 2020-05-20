@@ -17,7 +17,6 @@ class Label(EntityFile):
     def process_schemaless_header(self, header):
         # The first column is the ID.
         # If this starts with an underscore, it is not a property and should not be introduced to the graph.
-        self.types[0] = Type.ID
         self.id = 0
 
         for idx, field in enumerate(header):
