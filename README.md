@@ -122,6 +122,7 @@ The accepted data types are:
 | INT / INTEGER / LONG | A signed 64-bit integer value                                     |         Yes          |
 |       BOOLEAN        | A boolean value indicated by the string 'true' or 'false'         |         Yes          |
 
+If an `ID` column has a name string, the value will be added to each node as a property. Otherwise, it is internal to the bulk loader operation and will not appear in the graph. `START_ID` and `END_ID` columns will never be added as properties.
 
 ### ID Namespaces
 TODO

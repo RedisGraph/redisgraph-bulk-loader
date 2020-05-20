@@ -28,7 +28,6 @@ def convert_schema_type(in_type):
                 'double': Type.DOUBLE,
                 'float': Type.DOUBLE,
                 'string': Type.STRING,
-                'string[]': Type.STRING, # TODO tmp
                 'integer': Type.LONG,
                 'int': Type.LONG,
                 'long': Type.LONG,
@@ -50,13 +49,13 @@ def convert_schema_type(in_type):
 
 
 # Convert a single CSV property field into a binary stream.
-# Supported property types are string, numeric, boolean, and NULL.
-# type is either Type.DOUBLE, Type.BOOL or Type.STRING, and explicitly sets the value to this type if possible
+# Supported property types are string, integer, float, boolean, and (erroneously) null.
 def prop_to_binary(prop_val, prop_type):
     # All format strings start with an unsigned char to represent our prop_type enum
     format_str = "=B"
-    if prop_val is None:
-        # An empty field indicates a NULL property
+    if prop_val == "":
+        # An empty string indicates a NULL property.
+        # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
         return struct.pack(format_str, Type.NULL)
 
     # If field can be cast to a float, allow it
