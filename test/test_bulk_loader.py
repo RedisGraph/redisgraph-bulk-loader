@@ -436,7 +436,7 @@ class TestBulkLoader(unittest.TestCase):
 
         graph = Graph(graphname, self.redis_con)
         query_result = graph.query('MATCH (a) RETURN a.prop_a, a.prop_b, a.prop_c ORDER BY a.prop_a, a.prop_b, a.prop_c')
-        expected_result = [['val1', 5.0, True],
+        expected_result = [['val1', 5, True],
                            [10.5, 'a', False]]
 
         # The graph should have the correct types for all properties

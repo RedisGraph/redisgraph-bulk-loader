@@ -23,19 +23,19 @@ class Type:
 def convert_schema_type(in_type):
     try:
         return {
-                'null': Type.NULL,
-                'boolean': Type.BOOL,
-                'double': Type.DOUBLE,
-                'float': Type.DOUBLE,
-                'string': Type.STRING,
-                'integer': Type.LONG,
-                'int': Type.LONG,
-                'long': Type.LONG,
-                'id': Type.ID,
-                'start_id': Type.START_ID,
-                'end_id': Type.END_ID,
-                'ignore': Type.IGNORE
-                }[in_type]
+            'null': Type.NULL,
+            'boolean': Type.BOOL,
+            'double': Type.DOUBLE,
+            'float': Type.DOUBLE,
+            'string': Type.STRING,
+            'integer': Type.LONG,
+            'int': Type.LONG,
+            'long': Type.LONG,
+            'id': Type.ID,
+            'start_id': Type.START_ID,
+            'end_id': Type.END_ID,
+            'ignore': Type.IGNORE
+        }[in_type]
     except KeyError:
         # TODO tmp
         if in_type.startswith('id('):
@@ -48,45 +48,41 @@ def convert_schema_type(in_type):
             raise SchemaError("Encountered invalid field type '%s'" % in_type)
 
 
-# Convert a single CSV property field into a binary stream.
-# Supported property types are string, integer, float, boolean, and (erroneously) null.
-def prop_to_binary(prop_val, prop_type):
+# Convert a property field with an enforced type into a binary stream.
+# Supported property types are string, integer, float, and boolean.
+def typed_prop_to_binary(prop_val, prop_type):
     # All format strings start with an unsigned char to represent our prop_type enum
     format_str = "=B"
-    if prop_val == "":
-        # An empty string indicates a NULL property.
-        # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
-        return struct.pack(format_str, Type.NULL)
-
-    # If field can be cast to a float, allow it
-    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.DOUBLE:
+    # TODO allow ID type specification
+    if prop_type == Type.ID or prop_type == Type.LONG:
         try:
-            numeric_prop = float(prop_val)
-            if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
-                return struct.pack(format_str + "d", Type.DOUBLE, numeric_prop)
-        except:
-            # TODO ugly, rethink
-            if prop_type == Type.DOUBLE:
-                raise SchemaError("Could not parse '%s' as a double" % prop_val)
-
-    #  if prop_type is None or prop_type == Type.LONG or prop_type == Type.ID:
-    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.LONG:
-        try:
-            numeric_prop = int(float(prop_val))
+            numeric_prop = int(prop_val)
             return struct.pack(format_str + "q", Type.LONG, numeric_prop)
-        except:
+        except ValueError:
             # TODO ugly, rethink
             if prop_type == Type.LONG:
                 raise SchemaError("Could not parse '%s' as a long" % prop_val)
 
-    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.BOOL:
+    elif prop_type == Type.ID or prop_type == Type.DOUBLE:
+        try:
+            numeric_prop = float(prop_val)
+            if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
+                return struct.pack(format_str + "d", Type.DOUBLE, numeric_prop)
+        except ValueError:
+            # TODO ugly, rethink
+            if prop_type == Type.DOUBLE:
+                raise SchemaError("Could not parse '%s' as a double" % prop_val)
+
+    elif prop_type == Type.BOOL:
         # If field is 'false' or 'true', it is a boolean
         if prop_val.lower() == 'false':
             return struct.pack(format_str + '?', Type.BOOL, False)
         elif prop_val.lower() == 'true':
             return struct.pack(format_str + '?', Type.BOOL, True)
+        else:
+            raise SchemaError("Could not parse '%s' as a boolean" % prop_val)
 
-    if prop_type in (Type.INFERRED, Type.ID) or prop_type == Type.STRING:
+    elif prop_type == Type.STRING:
         # If we've reached this point, the property is a string
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
@@ -95,6 +91,44 @@ def prop_to_binary(prop_val, prop_type):
 
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
+
+
+# Convert a single CSV property field with an inferred type into a binary stream.
+# Supported property types are string, integer, float, boolean, and (erroneously) null.
+def inferred_prop_to_binary(prop_val):
+    # All format strings start with an unsigned char to represent our prop_type enum
+    format_str = "=B"
+    if prop_val == "":
+        # An empty string indicates a NULL property.
+        # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
+        return struct.pack(format_str, Type.NULL)
+
+    # Try to parse value as an integer.
+    try:
+        numeric_prop = int(prop_val)
+        return struct.pack(format_str + "q", Type.LONG, numeric_prop)
+    except ValueError:
+        pass
+
+    # Try to parse value as a float.
+    try:
+        numeric_prop = float(prop_val)
+        if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
+            return struct.pack(format_str + "d", Type.DOUBLE, numeric_prop)
+    except ValueError:
+        pass
+
+    # If field is 'false' or 'true', it is a boolean.
+    if prop_val.lower() == 'false':
+        return struct.pack(format_str + '?', Type.BOOL, False)
+    elif prop_val.lower() == 'true':
+        return struct.pack(format_str + '?', Type.BOOL, True)
+
+    # If we've reached this point, the property is a string.
+    encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
+    # Encoding len+1 adds a null terminator to the string
+    format_str += "%ds" % (len(encoded_str) + 1)
+    return struct.pack(format_str, Type.STRING, encoded_str)
 
 
 # Superclass for label and relation CSV files
@@ -204,7 +238,10 @@ class EntityFile(object):
         for idx, field in enumerate(line):
             if not self.column_names[idx]:
                 continue
-            props.append(prop_to_binary(field, self.types[idx]))
+            if Config.enforce_schema:
+                props.append(typed_prop_to_binary(field, self.types[idx]))
+            else:
+                props.append(inferred_prop_to_binary(field))
         return b''.join(p for p in props)
 
     def to_binary(self):
