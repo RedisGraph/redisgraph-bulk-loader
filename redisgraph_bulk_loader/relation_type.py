@@ -23,17 +23,13 @@ class RelationType(EntityFile):
         # The first column is the source ID and the second is the destination ID.
         self.types[0] = Type.START_ID
         self.types[1] = Type.END_ID
-        self.skip_offsets[0] = True
-        self.skip_offsets[1] = True
         self.start_namespace = None
         self.end_namespace = None
 
-        #  self.types[2:] = [Type.INFERRED] * self.column_count - 2
+        for idx, field in enumerate(header[2:]):
+            self.column_names[idx+2] = field
 
-        for idx, field in enumerate(header):
-            self.column_names[idx] = field
-
-    def post_process_header(self, header):
+    def post_process_header_with_schema(self, header):
         # Can interleave these tasks if preferred.
         if self.types.count(Type.START_ID) != 1:
             raise SchemaError("Relation file '%s' should have exactly one START_ID column."

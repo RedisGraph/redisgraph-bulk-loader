@@ -19,14 +19,14 @@ class Label(EntityFile):
         # If this starts with an underscore, it is not a property and should not be introduced to the graph.
         self.types[0] = Type.ID
         self.id = 0
-        if header[0][0] == '_':
-            self.skip_offsets[0] = True
-        #  self.types[1:] = [Type.INFERRED] * self.column_count - 1
 
         for idx, field in enumerate(header):
             self.column_names[idx] = field
 
-    def post_process_header(self, header):
+        if header[0][0] == '_':
+            self.column_names[0] = None
+
+    def post_process_header_with_schema(self, header):
         # No ID field is required if we're only inserting nodes.
         if Config.store_node_identifiers is False:
             return

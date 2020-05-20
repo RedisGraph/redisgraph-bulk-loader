@@ -147,7 +147,7 @@ class EntityFile(object):
         fmt = "=%dsI" % (len(entity_bytes) + 1) # Unaligned native, entity name, count of properties
         args = [entity_bytes, self.prop_count]
         for idx in range(self.column_count):
-            if self.skip_offsets[idx]:
+            if not self.column_names[idx]:
                 continue
             prop = self.column_names[idx].encode()
             fmt += "%ds" % (len(prop) + 1) # encode string with a null terminator
@@ -163,50 +163,38 @@ class EntityFile(object):
             if len(pair) > 2:
                 raise CSVError("Field '%s' had %d colons" % field, len(field))
 
-            # No colon in name, this column does not have an enforced data type.
-            if len(pair) == 1:
-                self.types[idx] = Type.INFERRED
-                self.column_names[idx] = pair[0]
-                if idx == 0:
-                    self.types[idx] = Type.ID # TODO problematic
-                continue
+            # Convert the column type.
+            col_type = convert_schema_type(pair[1].casefold())
 
-            if len(pair[0]) == 0: # Delete empty string in a case like ":LABEL"
-                del pair[0]
-
-            if len(pair) == 1:
-                # We have a type, but no column name.
-                # TODO fold into above case?
-                self.types[idx] = convert_schema_type(pair[0].casefold())
-                self.skip_offsets[idx] = True
-                if self.types[idx] not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
-                    # Any other field should have 2 elements
-                    raise SchemaError("Each property in the header should be a colon-separated pair")
+            # If the column did not have a name but the type requires one, emit an error.
+            if len(pair[0]) == 0 and col_type not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
+                raise SchemaError("Each property in the header should be a colon-separated pair")
             else:
                 # We have a column name and a type.
-                self.column_names[idx] = pair[0]
-                self.types[idx] = convert_schema_type(pair[1].casefold())
-                if self.types[idx] in (Type.START_ID, Type.END_ID, Type.IGNORE):
-                    self.skip_offsets[idx] = True
+                # Only store the name if the column's values should be added as properties.
+                if col_type not in (Type.START_ID, Type.END_ID, Type.IGNORE):
+                    self.column_names[idx] = pair[0]
+
+            # Store the column type.
+            self.types[idx] = col_type
 
     def convert_header(self):
         header = next(self.reader)
         self.column_count = len(header)
-        self.column_names = [None] * self.column_count   # Property names of every column.
+        self.column_names = [None] * self.column_count   # Property names of every column; None if column does not update graph.
         self.types = [Type.INFERRED] * self.column_count # Value type of every column.
-        self.skip_offsets = [False] * self.column_count  # Whether column at any offset should not be stored as a property.
 
         if Config.enforce_schema:
             # Use generic logic to convert the header with schema.
             self.convert_header_with_schema(header)
             # The subclass will perform post-processing.
-            self.post_process_header(header)
+            self.post_process_header_with_schema(header)
         else:
             # The subclass will process the header itself
             self.process_schemaless_header(header)
 
         # The number of properties is equal to the number of non-skipped columns.
-        self.prop_count = self.skip_offsets.count(False)
+        self.prop_count = self.column_count - self.column_names.count(None)
         self.packed_header = self.pack_header()
         self.binary_size += len(self.packed_header)
 
@@ -214,10 +202,9 @@ class EntityFile(object):
     def pack_props(self, line):
         props = []
         for idx, field in enumerate(line):
-            if self.skip_offsets[idx]:
+            if not self.column_names[idx]:
                 continue
-            if self.column_names[idx]:
-                props.append(prop_to_binary(field, self.types[idx]))
+            props.append(prop_to_binary(field, self.types[idx]))
         return b''.join(p for p in props)
 
     def to_binary(self):
