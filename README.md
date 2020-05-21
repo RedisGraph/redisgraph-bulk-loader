@@ -88,7 +88,7 @@ The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typ
     - `double`: an unquoted value that can be read as a floating-point type.
     - `string`: any field that is either quote-interpolated or cannot be casted to a numeric or boolean type.
 - Cypher does not allow NULL values to be assigned to properties.
-- The default behaviour is to infer the property type, attempting to cast it to integer, float, boolean, or string in that order. 
+- The default behaviour is to infer the property type, attempting to cast it to integer, float, boolean, or string in that order.
 - The `--enforce-schema` flag and an [Input Schema](#input-schemas) should be used if type inference is not desired.
 
 ### Label file format:
@@ -125,4 +125,26 @@ The accepted data types are:
 If an `ID` column has a name string, the value will be added to each node as a property. Otherwise, it is internal to the bulk loader operation and will not appear in the graph. `START_ID` and `END_ID` columns will never be added as properties.
 
 ### ID Namespaces
-TODO
+Typically, node identifiers need to be unique across all input CSVs. When using an input schema, it is (optionally) possible to create ID namespaces, and the identifier only needs to be unique across its namespace. This is particularly useful when each input CSV has primary keys which overlap with others.
+
+To introduce a namespace, follow the `:ID` type string with a parentheses-interpolated namespace string, such as `:ID(User)`. The same namespace should be specified in the `:START_ID` or `:END_ID` field of relation files, as in `:START_ID(User)`.
+
+### Input Schema CSV examples
+User.csv
+```
+:ID(User), name:STRING, rank:INT
+0, "Jeffrey", 5
+1, "Filipe", 8
+```
+
+FOLLOWS.csv
+```
+:START_ID(User), :END_ID(User), reaction_count:INT
+0, 1, 25
+1, 0, 10
+```
+Inserting these CSVs with the command:
+`redisgraph-bulk-loader SocialGraph --enforce-schema --nodes User.csv --relations FOLLOWS.csv`
+
+Will produce a graph named SocialGraph with 2 users, Jeffrey and Filipe. Jeffrey follows Filipe, and that relation has a reaction_count of 25. Filipe also follows Jeffrey, with a reaction_count of 10.
+
