@@ -516,31 +516,32 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
 
-    def test12_no_null_values(self):
-        """Validate that NULL inputs are not inserted."""
+    # TODO enable after merge of RedisGraph PR #1108
+    #  def test12_no_null_values(self):
+        #  """Validate that NULL inputs are not inserted."""
 
-        graphname = "null_graph"
-        with open('/tmp/nodes.tmp', mode='w') as csv_file:
-            out = csv.writer(csv_file)
-            out.writerow(['str_col', 'mixed_col'])
-            out.writerow(['str1', True])
-            out.writerow(['str2', None])
+        #  graphname = "null_graph"
+        #  with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            #  out = csv.writer(csv_file)
+            #  out.writerow(['str_col', 'mixed_col'])
+            #  out.writerow(['str1', True])
+            #  out.writerow(['str2', None])
 
-        runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname], catch_exceptions=False)
+        #  runner = CliRunner()
+        #  res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          #  graphname], catch_exceptions=False)
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn('2 nodes created', res.output)
+        #  self.assertEqual(res.exit_code, 0)
+        #  self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
-        query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
+        #  graph = Graph(graphname, self.redis_con)
+        #  query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
-        # Only the first node should only have the 'mixed_col' property
-        node_1 = {'str_col': 'str1', 'mixed_col': True}
-        node_2 = {'str_col': 'str2'}
-        self.assertEqual(query_result.result_set[0][0].properties, node_1)
-        self.assertEqual(query_result.result_set[1][0].properties, node_2)
+        #  # Only the first node should only have the 'mixed_col' property
+        #  node_1 = {'str_col': 'str1', 'mixed_col': True}
+        #  node_2 = {'str_col': 'str2'}
+        #  self.assertEqual(query_result.result_set[0][0].properties, node_1)
+        #  self.assertEqual(query_result.result_set[1][0].properties, node_2)
 
     def test13_id_namespaces(self):
         """Validate that ID namespaces allow for scoped identifiers."""
