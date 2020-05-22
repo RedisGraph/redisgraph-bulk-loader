@@ -508,7 +508,6 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('2 nodes created', res.output)
 
         graph = Graph(graphname, self.redis_con)
-        #  query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col ORDER BY a.num_col')
         query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
         # The nodes should only have the 'str_col' property
@@ -535,7 +534,6 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('2 nodes created', res.output)
 
         graph = Graph(graphname, self.redis_con)
-        #  query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col ORDER BY a.num_col')
         query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
         # Only the first node should only have the 'mixed_col' property
@@ -543,6 +541,46 @@ class TestBulkLoader(unittest.TestCase):
         node_2 = {'str_col': 'str2'}
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
+
+    def test13_id_namespaces(self):
+        """Validate that ID namespaces allow for scoped identifiers."""
+
+        graphname = "namespace_graph"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['id:ID(User)', 'name:STRING'])
+            out.writerow([0, 'Jeffrey'])
+            out.writerow([1, 'Filipe'])
+
+        with open('/tmp/nodes2.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['id:ID(Post)', 'views:INT'])
+            out.writerow([0, 20])
+            out.writerow([1, 40])
+
+        with open('/tmp/relations.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow([':START_ID(User), :END_ID(Post)'])
+            out.writerow([0, 0])
+            out.writerow([1, 1])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'User', '/tmp/nodes.tmp',
+                                          '--nodes-with-label', 'Post', '/tmp/nodes2.tmp',
+                                          '--relations-with-type', 'AUTHOR', '/tmp/relations.tmp',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('4 nodes created', res.output)
+        self.assertIn("2 relations created", res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
+
+        expected_result = [[0, 'Jeffrey', 'User', 0, 20, 'Post'],
+                           [1, 'Filipe', 'User', 1, 40, 'Post']]
+        self.assertEqual(query_result.result_set, expected_result)
 
 
 if __name__ == '__main__':
