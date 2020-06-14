@@ -33,12 +33,14 @@ class TestBulkLoader(unittest.TestCase):
         Instantiate a new Redis connection
         """
         cls.redis_con = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        cls.redis_con.flushall()
 
     @classmethod
     def tearDownClass(cls):
         """Delete temporary files"""
         os.remove('/tmp/nodes.tmp')
         os.remove('/tmp/relations.tmp')
+        cls.redis_con.flushall()
 
     def validate_exception(self, res, expected_msg):
         self.assertNotEqual(res.exit_code, 0)

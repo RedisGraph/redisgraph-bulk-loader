@@ -39,11 +39,12 @@ jobs:
           command: python setup.py sdist
 
       - run:
-          name: run tests
+          name: run tests and upload coverage
           command: |
             . venv/bin/activate
-            pip install git+https://github.com/RedisGraph/redisgraph-py.git@master
-            python -m unittest test/test_bulk_loader.py
+            pip install -r tests/requirements.txt
+            pytest --cov redisgraph_bulk_loader
+            codecov -t ${CODECOV_TOKEN}
 
 workflows:
   version: 2
