@@ -42,7 +42,7 @@ jobs:
           name: run tests and upload coverage
           command: |
             . venv/bin/activate
-            pip install -r tests/requirements.txt
+            pip install -r test/requirements.txt
             pytest --cov redisgraph_bulk_loader
             codecov -t ${CODECOV_TOKEN}
 
