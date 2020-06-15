@@ -14,7 +14,6 @@ class RelationType(EntityFile):
         self.start_id = 0
         self.end_id = 1
         self.query_buffer = query_buffer
-        #  self.post_process_header()
 
     def process_schemaless_header(self, header):
         if self.column_count < 2:
