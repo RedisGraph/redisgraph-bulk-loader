@@ -43,7 +43,9 @@ jobs:
           command: |
             . venv/bin/activate
             pip install git+https://github.com/RedisGraph/redisgraph-py.git@master
-            python -m unittest test/test_bulk_loader.py
+            pip install codecov
+            coverage run -m unittest test/test_bulk_loader.py
+            bash <(curl -s https://codecov.io/bash) 
 
 workflows:
   version: 2
