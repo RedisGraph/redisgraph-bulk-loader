@@ -1,17 +1,16 @@
 import re
 import sys
 import click
-from config import Config
 from entity_file import Type, EntityFile
 from exceptions import SchemaError
 
 
 class Label(EntityFile):
     """Handler class for processing Label CSV files."""
-    def __init__(self, query_buffer, infile, label_str):
+    def __init__(self, query_buffer, infile, label_str, config):
         self.id_namespace = None
         self.query_buffer = query_buffer
-        super(Label, self).__init__(infile, label_str)
+        super(Label, self).__init__(infile, label_str, config)
         #  self.post_process_header()
 
     def process_schemaless_header(self, header):
@@ -27,7 +26,7 @@ class Label(EntityFile):
 
     def post_process_header_with_schema(self, header):
         # No ID field is required if we're only inserting nodes.
-        if Config.store_node_identifiers is False:
+        if self.config.store_node_identifiers is False:
             return
 
         # Verify that exactly one field is labeled ID.
@@ -46,7 +45,7 @@ class Label(EntityFile):
         if identifier in self.query_buffer.nodes:
             sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
                              % (identifier, self.infile.name, self.reader.line_num))
-            if Config.skip_invalid_nodes is False:
+            if self.config.skip_invalid_nodes is False:
                 sys.exit(1)
         self.query_buffer.nodes[identifier] = self.query_buffer.top_node_id
         self.query_buffer.top_node_id += 1
@@ -58,7 +57,7 @@ class Label(EntityFile):
                 self.validate_row(row)
 
                 # Update the node identifier dictionary if necessary
-                if Config.store_node_identifiers:
+                if self.config.store_node_identifiers:
                     id_field = row[self.id]
                     if self.id_namespace is not None:
                         id_field = self.id_namespace + '.' + str(id_field)
@@ -69,7 +68,7 @@ class Label(EntityFile):
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
                 # TODO how much of this can be made uniform w/ relations and moved to Querybuffer?
-                if self.binary_size + row_binary_len > Config.max_token_size:
+                if self.binary_size + row_binary_len > self.config.max_token_size:
                     self.query_buffer.labels.append(self.to_binary())
                     self.query_buffer.send_buffer()
                     self.reset_partial_binary()

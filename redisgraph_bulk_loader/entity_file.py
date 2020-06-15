@@ -4,7 +4,6 @@ import csv
 import math
 import struct
 from enum import Enum
-from config import Config
 from exceptions import CSVError, SchemaError
 
 
@@ -124,7 +123,10 @@ def inferred_prop_to_binary(prop_val):
 
 # Superclass for label and relation CSV files
 class EntityFile(object):
-    def __init__(self, filename, label):
+    def __init__(self, filename, label, config):
+        # The configurations for this run.
+        self.config = config
+
         # The label or relation type string is the basename of the file
         if label:
             self.entity_str = label
@@ -135,7 +137,7 @@ class EntityFile(object):
 
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter=Config.separator, skipinitialspace=True, quoting=Config.quoting)
+        self.reader = csv.reader(self.infile, delimiter=config.separator, skipinitialspace=True, quoting=config.quoting)
 
         self.packed_header = b''
         self.binary_entities = []
@@ -158,7 +160,7 @@ class EntityFile(object):
         # Each row should have the same number of fields
         if len(row) != self.column_count:
             raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
-                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), Config.separator.join(row)))
+                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), self.config.separator.join(row)))
 
     # If part of a CSV file was sent to Redis, delete the processed entities and update the binary size
     def reset_partial_binary(self):
@@ -209,7 +211,7 @@ class EntityFile(object):
         self.column_count = len(header)
         self.column_names = [None] * self.column_count   # Property names of every column; None if column does not update graph.
 
-        if Config.enforce_schema:
+        if self.config.enforce_schema:
             # Use generic logic to convert the header with schema.
             self.convert_header_with_schema(header)
             # The subclass will perform post-processing.
@@ -229,7 +231,7 @@ class EntityFile(object):
         for idx, field in enumerate(line):
             if not self.column_names[idx]:
                 continue
-            if Config.enforce_schema:
+            if self.config.enforce_schema:
                 props.append(typed_prop_to_binary(field, self.types[idx]))
             else:
                 props.append(inferred_prop_to_binary(field))

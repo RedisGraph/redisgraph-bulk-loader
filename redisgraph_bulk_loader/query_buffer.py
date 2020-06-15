@@ -1,8 +1,5 @@
-from config import Config
-
-
 class QueryBuffer:
-    def __init__(self, graphname, client):
+    def __init__(self, graphname, client, config):
         self.nodes = None
         self.top_node_id = 0
 
@@ -11,7 +8,7 @@ class QueryBuffer:
         self.graphname = graphname
 
         # Create a node dictionary if we're building relations and as such require unique identifiers
-        if Config.store_node_identifiers:
+        if config.store_node_identifiers:
             self.nodes = {}
         else:
             self.nodes = None

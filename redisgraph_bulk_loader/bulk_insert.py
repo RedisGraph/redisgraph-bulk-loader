@@ -5,22 +5,22 @@ import click
 from timeit import default_timer as timer
 
 sys.path.append(os.path.dirname(__file__))
-from config import Config, Config_Set
+from config import Config
 from query_buffer import QueryBuffer
 from label import Label
 from relation_type import RelationType
 
 
-def parse_schemas(cls, query_buf, path_to_csv, csv_tuples):
+def parse_schemas(cls, query_buf, path_to_csv, csv_tuples, config):
     schemas = [None] * (len(path_to_csv) + len(csv_tuples))
     for idx, in_csv in enumerate(path_to_csv):
         # Build entity descriptor from input CSV
-        schemas[idx] = cls(query_buf, in_csv, None)
+        schemas[idx] = cls(query_buf, in_csv, None, config)
 
     offset = len(path_to_csv)
     for idx, csv_tuple in enumerate(csv_tuples):
         # Build entity descriptor from input CSV
-        schemas[idx + offset] = cls(query_buf, csv_tuple[1], csv_tuple[0])
+        schemas[idx + offset] = cls(query_buf, csv_tuple[1], csv_tuple[0], config)
     return schemas
 
 
@@ -31,8 +31,8 @@ def process_entities(entities):
         entity.process_entities()
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
-        if (entity.query_buffer.buffer_size + added_size >= Config.max_buffer_size
-                or entity.query_buffer.redis_token_count + len(entity.binary_entities) >= Config.max_token_count):
+        if (entity.query_buffer.buffer_size + added_size >= entity.config.max_buffer_size
+                or entity.query_buffer.redis_token_count + len(entity.binary_entities) >= entity.config.max_token_count):
             # Send and flush the buffer if appropriate
             entity.query_buffer.send_buffer()
         # Add binary data to list and update all counts
@@ -71,11 +71,11 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
 
     start_time = timer()
 
-    # Initialize configurations with command-line arguments
-    Config_Set(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote))
-
     # If relations are being built, we must store unique node identifiers to later resolve endpoints.
-    Config.store_node_identifiers = any(relations) or any(relations_with_type)
+    store_node_identifiers = any(relations) or any(relations_with_type)
+
+    # Initialize configurations with command-line arguments
+    config = Config(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote), store_node_identifiers)
 
     # Attempt to connect to Redis server
     try:
@@ -100,11 +100,11 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    query_buf = QueryBuffer(graph, client)
+    query_buf = QueryBuffer(graph, client, config)
 
     # Read the header rows of each input CSV and save its schema.
-    labels = parse_schemas(Label, query_buf, nodes, nodes_with_label)
-    reltypes = parse_schemas(RelationType, query_buf, relations, relations_with_type)
+    labels = parse_schemas(Label, query_buf, nodes, nodes_with_label, config)
+    reltypes = parse_schemas(RelationType, query_buf, relations, relations_with_type, config)
 
     process_entities(labels)
     process_entities(reltypes)

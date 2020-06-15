@@ -1,15 +1,14 @@
 import re
 import struct
 import click
-from config import Config
 from entity_file import Type, EntityFile
 from exceptions import CSVError, SchemaError
 
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
-    def __init__(self, query_buffer, infile, type_str):
-        super(RelationType, self).__init__(infile, type_str)
+    def __init__(self, query_buffer, infile, type_str, config):
+        super(RelationType, self).__init__(infile, type_str, config)
 
         self.start_id = 0
         self.end_id = 1
@@ -62,7 +61,7 @@ class RelationType(EntityFile):
                     dest = self.query_buffer.nodes[end_id]
                 except KeyError as e:
                     print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
-                    if Config.skip_invalid_edges is False:
+                    if self.config.skip_invalid_edges is False:
                         raise e
                     continue
                 fmt = "=QQ" # 8-byte unsigned ints for src and dest
@@ -70,7 +69,7 @@ class RelationType(EntityFile):
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
-                if self.binary_size + row_binary_len > Config.max_token_size:
+                if self.binary_size + row_binary_len > self.config.max_token_size:
                     self.query_buffer.reltypes.append(self.to_binary())
                     self.query_buffer.send_buffer()
                     self.reset_partial_binary()
