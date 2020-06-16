@@ -9,9 +9,6 @@ from exceptions import CSVError, SchemaError
 class RelationType(EntityFile):
     def __init__(self, query_buffer, infile, type_str, config):
         super(RelationType, self).__init__(infile, type_str, config)
-
-        self.start_id = 0
-        self.end_id = 1
         self.query_buffer = query_buffer
 
     def process_schemaless_header(self, header):
@@ -19,6 +16,8 @@ class RelationType(EntityFile):
             raise CSVError("Relation file '%s' should have at least 2 elements in header line."
                            % (self.infile.name))
         # The first column is the source ID and the second is the destination ID.
+        self.start_id = 0
+        self.end_id = 1
         self.start_namespace = None
         self.end_namespace = None
 

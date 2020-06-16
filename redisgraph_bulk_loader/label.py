@@ -11,7 +11,6 @@ class Label(EntityFile):
         self.id_namespace = None
         self.query_buffer = query_buffer
         super(Label, self).__init__(infile, label_str, config)
-        #  self.post_process_header()
 
     def process_schemaless_header(self, header):
         # The first column is the ID.

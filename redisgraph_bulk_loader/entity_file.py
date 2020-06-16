@@ -121,8 +121,8 @@ def inferred_prop_to_binary(prop_val):
     return struct.pack(format_str, Type.STRING.value, encoded_str)
 
 
-# Superclass for label and relation CSV files
 class EntityFile(object):
+    """Superclass for Label and RelationType classes"""
     def __init__(self, filename, label, config):
         # The configurations for this run.
         self.config = config
