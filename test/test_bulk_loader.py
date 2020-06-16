@@ -26,19 +26,21 @@ def row_count(in_csv):
     return idx
 
 
-class TestBulkInsert(unittest.TestCase):
+class TestBulkLoader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """
         Instantiate a new Redis connection
         """
         cls.redis_con = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        cls.redis_con.flushall()
 
     @classmethod
     def tearDownClass(cls):
         """Delete temporary files"""
         os.remove('/tmp/nodes.tmp')
         os.remove('/tmp/relations.tmp')
+        cls.redis_con.flushall()
 
     def validate_exception(self, res, expected_msg):
         self.assertNotEqual(res.exit_code, 0)
@@ -195,7 +197,7 @@ class TestBulkInsert(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should report 3 node creations and 2 edge creations
         self.assertEqual(res.exit_code, 0)
@@ -227,7 +229,7 @@ class TestBulkInsert(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should fail because a node identifier is reused
         self.assertNotEqual(res.exit_code, 0)
@@ -236,7 +238,7 @@ class TestBulkInsert(unittest.TestCase):
         # Run the script again without creating relations
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should succeed and create 3 nodes
         self.assertEqual(res.exit_code, 0)
@@ -262,7 +264,7 @@ class TestBulkInsert(unittest.TestCase):
                                           '--relations', knows_file,
                                           '--relations', visited_file,
                                           '--max-token-count', 1,
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         # The script should report 27 overall node creations and 48 edge creations.
         self.assertEqual(res.exit_code, 0)
@@ -357,7 +359,7 @@ class TestBulkInsert(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
         self.assertIn('3 nodes created', res.output)
@@ -391,7 +393,7 @@ class TestBulkInsert(unittest.TestCase):
 
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         assert res.exit_code == 0
         assert '9 nodes created' in res.output
@@ -429,33 +431,33 @@ class TestBulkInsert(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--separator', '|',
-                                          graphname])
+                                          graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
         graph = Graph(graphname, self.redis_con)
         query_result = graph.query('MATCH (a) RETURN a.prop_a, a.prop_b, a.prop_c ORDER BY a.prop_a, a.prop_b, a.prop_c')
-        expected_result = [['val1', 5.0, True],
+        expected_result = [['val1', 5, True],
                            [10.5, 'a', False]]
 
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test09_field_types(self):
-        """Validate that the field-types argument is respected"""
+    def test09_schema(self):
+        """Validate that the enforce-schema argument is respected"""
 
         graphname = "tmpgraph7"
         with open('/tmp/nodes.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file)
-            out.writerow(['str_col', 'num_col'])
+            out.writerow(['str_col:STRING', 'num_col:INT'])
             out.writerow([0, 0])
             out.writerow([1, 1])
 
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          '--field-types', '{"nodes":[3, 2]}',
-                                          graphname])
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
@@ -468,26 +470,119 @@ class TestBulkInsert(unittest.TestCase):
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test10_invalid_field_types(self):
-        """Validate that errors are emitted properly with an invalid field-types argument."""
+    def test10_invalid_schema(self):
+        """Validate that errors are emitted properly with an invalid CSV schema."""
 
         graphname = "expect_fail"
         with open('/tmp/nodes.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file)
-            out.writerow(['num_col'])
+            out.writerow(['num_col:INT'])
             out.writerow([5])
             out.writerow([10])
             out.writerow(['str'])
             out.writerow([15])
 
         runner = CliRunner()
-        # Try to parse all cells as numerics
+        # Try to parse all cells as integers
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
-                                          '--field-types', '{"nodes":[2]}',
+                                          '--enforce-schema',
                                           graphname])
 
         # Expect an error.
-        self.validate_exception(res, "unable to parse")
+        self.validate_exception(res, "Could not parse")
+
+    def test11_schema_ignore_columns(self):
+        """Validate that columns with the type IGNORE are not inserted."""
+
+        graphname = "ignore_graph"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['str_col:STRING', 'ignore_col:IGNORE'])
+            out.writerow(['str1', 0])
+            out.writerow(['str2', 1])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('2 nodes created', res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
+
+        # The nodes should only have the 'str_col' property
+        node_1 = {'str_col': 'str1'}
+        node_2 = {'str_col': 'str2'}
+        self.assertEqual(query_result.result_set[0][0].properties, node_1)
+        self.assertEqual(query_result.result_set[1][0].properties, node_2)
+
+    def test12_no_null_values(self):
+        """Validate that NULL inputs are not inserted."""
+
+        graphname = "null_graph"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['str_col', 'mixed_col'])
+            out.writerow(['str1', True])
+            out.writerow(['str2', None])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('2 nodes created', res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
+
+        # Only the first node should only have the 'mixed_col' property
+        node_1 = {'str_col': 'str1', 'mixed_col': True}
+        node_2 = {'str_col': 'str2'}
+        self.assertEqual(query_result.result_set[0][0].properties, node_1)
+        self.assertEqual(query_result.result_set[1][0].properties, node_2)
+
+    def test13_id_namespaces(self):
+        """Validate that ID namespaces allow for scoped identifiers."""
+
+        graphname = "namespace_graph"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['id:ID(User)', 'name:STRING'])
+            out.writerow([0, 'Jeffrey'])
+            out.writerow([1, 'Filipe'])
+
+        with open('/tmp/nodes2.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['id:ID(Post)', 'views:INT'])
+            out.writerow([0, 20])
+            out.writerow([1, 40])
+
+        with open('/tmp/relations.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow([':START_ID(User), :END_ID(Post)'])
+            out.writerow([0, 0])
+            out.writerow([1, 1])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'User', '/tmp/nodes.tmp',
+                                          '--nodes-with-label', 'Post', '/tmp/nodes2.tmp',
+                                          '--relations-with-type', 'AUTHOR', '/tmp/relations.tmp',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('4 nodes created', res.output)
+        self.assertIn("2 relations created", res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
+
+        expected_result = [[0, 'Jeffrey', 'User', 0, 20, 'Post'],
+                           [1, 'Filipe', 'User', 1, 40, 'Post']]
+        self.assertEqual(query_result.result_set, expected_result)
 
 
 if __name__ == '__main__':
