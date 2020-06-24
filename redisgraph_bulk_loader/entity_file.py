@@ -200,7 +200,7 @@ class EntityFile(object):
             else:
                 # We have a column name and a type.
                 # Only store the name if the column's values should be added as properties.
-                if col_type not in (Type.START_ID, Type.END_ID, Type.IGNORE):
+                if len(pair[0]) > 0 and col_type not in (Type.START_ID, Type.END_ID, Type.IGNORE):
                     self.column_names[idx] = pair[0]
 
             # Store the column type.
