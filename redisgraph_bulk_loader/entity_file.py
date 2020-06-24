@@ -137,7 +137,7 @@ class EntityFile(object):
 
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter=config.separator, skipinitialspace=True, quoting=config.quoting)
+        self.reader = csv.reader(self.infile, delimiter=config.separator, skipinitialspace=True, quoting=config.quoting, escapechar='\\')
 
         self.packed_header = b''
         self.binary_entities = []

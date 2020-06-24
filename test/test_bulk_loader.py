@@ -562,7 +562,7 @@ class TestBulkLoader(unittest.TestCase):
 
         with open('/tmp/relations.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file)
-            out.writerow([':START_ID(User), :END_ID(Post)'])
+            out.writerow([':START_ID(User)', ':END_ID(Post)'])
             out.writerow([0, 0])
             out.writerow([1, 1])
 
