@@ -48,7 +48,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         try:
             numeric_prop = int(prop_val)
             return struct.pack(format_str + "q", Type.LONG.value, numeric_prop)
-        except ValueError:
+        except (ValueError, struct.error):
             # TODO ugly, rethink
             if prop_type == Type.LONG:
                 raise SchemaError("Could not parse '%s' as a long" % prop_val)
@@ -58,7 +58,7 @@ def typed_prop_to_binary(prop_val, prop_type):
             numeric_prop = float(prop_val)
             if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
                 return struct.pack(format_str + "d", Type.DOUBLE.value, numeric_prop)
-        except ValueError:
+        except (ValueError, struct.error):
             # TODO ugly, rethink
             if prop_type == Type.DOUBLE:
                 raise SchemaError("Could not parse '%s' as a double" % prop_val)
@@ -97,7 +97,7 @@ def inferred_prop_to_binary(prop_val):
     try:
         numeric_prop = int(prop_val)
         return struct.pack(format_str + "q", Type.LONG.value, numeric_prop)
-    except ValueError:
+    except (ValueError, struct.error):
         pass
 
     # Try to parse value as a float.
@@ -105,7 +105,7 @@ def inferred_prop_to_binary(prop_val):
         numeric_prop = float(prop_val)
         if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
             return struct.pack(format_str + "d", Type.DOUBLE.value, numeric_prop)
-    except ValueError:
+    except (ValueError, struct.error):
         pass
 
     # If field is 'false' or 'true', it is a boolean.
