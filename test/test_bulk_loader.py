@@ -584,6 +584,59 @@ class TestBulkLoader(unittest.TestCase):
                            [1, 'Filipe', 'User', 1, 40, 'Post']]
         self.assertEqual(query_result.result_set, expected_result)
 
+    def test14_array_properties_inferred(self):
+        """Validate that array properties are correctly inserted."""
+
+        graphname = "arr_graph"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file, delimiter='|')
+            out.writerow(['str_col', 'arr_col'])
+            out.writerow(['str1', """[1, 0.2, 'nested_str', False]"""])
+            out.writerow(['str2', """['prop1', ['nested_1', 'nested_2'], 5]"""])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          '--separator', '|',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('2 nodes created', res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
+
+        node_1 = {'str_col': 'str1', 'arr_col': [1, 0.2, 'nested_str', False]}
+        node_2 = {'str_col': 'str2', 'arr_col': ['prop1', ['nested_1', 'nested_2'], 5]}
+        self.assertEqual(query_result.result_set[0][0].properties, node_1)
+        self.assertEqual(query_result.result_set[1][0].properties, node_2)
+
+    def test15_array_properties_schema_enforced(self):
+        """Validate that array properties are correctly inserted with an enforced schema."""
+
+        graphname = "arr_graph_with_schema"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file, delimiter='|')
+            out.writerow(['str_col:STRING', 'arr_col:ARRAY'])
+            out.writerow(['str1', """[1, 0.2, 'nested_str', False]"""])
+            out.writerow(['str2', """['prop1', ['nested_1', 'nested_2'], 5]"""])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                          '--separator', '|',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('2 nodes created', res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
+
+        node_1 = {'str_col': 'str1', 'arr_col': [1, 0.2, 'nested_str', False]}
+        node_2 = {'str_col': 'str2', 'arr_col': ['prop1', ['nested_1', 'nested_2'], 5]}
+        self.assertEqual(query_result.result_set[0][0].properties, node_1)
+        self.assertEqual(query_result.result_set[1][0].properties, node_2)
+
 
 if __name__ == '__main__':
     unittest.main()

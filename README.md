@@ -87,6 +87,7 @@ The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typ
     - `integer`: an unquoted value that can be read as an integer type.
     - `double`: an unquoted value that can be read as a floating-point type.
     - `string`: any field that is either quote-interpolated or cannot be casted to a numeric or boolean type.
+    - `array`: A bracket-interpolated array of elements of any types. Strings within the array must be explicitly quote-interpolated. Array properties require use of a non-comma delimiter for the CSV (`-o`).
 - Cypher does not allow NULL values to be assigned to properties.
 - The default behaviour is to infer the property type, attempting to cast it to integer, float, boolean, or string in that order.
 - The `--enforce-schema` flag and an [Input Schema](#input-schemas) should be used if type inference is not desired.
@@ -122,6 +123,7 @@ The accepted data types are:
 | INT / INTEGER / LONG | A signed 64-bit integer value                                     |         Yes          |
 |       BOOLEAN        | A boolean value indicated by the string 'true' or 'false'         |         Yes          |
 |        STRING        | A string value                                                    |         Yes          |
+|        ARRAY         | An array value                                                    |         Yes          |
 
 If an `ID` column has a name string, the value will be added to each node as a property. Otherwise, it is internal to the bulk loader operation and will not appear in the graph. `START_ID` and `END_ID` columns will never be added as properties.
 

@@ -1,10 +1,14 @@
 import os
 import io
 import csv
+import ast
+import sys
 import math
 import struct
 from enum import Enum
 from exceptions import CSVError, SchemaError
+
+csv.field_size_limit(sys.maxsize) # Don't limit the size of user input fields.
 
 
 class Type(Enum):
@@ -16,10 +20,11 @@ class Type(Enum):
     LONG = 4
     INT = 4         # alias to LONG
     INTEGER = 4     # alias to LONG
-    ID = 5
-    START_ID = 6
-    END_ID = 7
-    IGNORE = 8
+    ARRAY = 5
+    ID = 6
+    START_ID = 7
+    END_ID = 8
+    IGNORE = 9
 
 
 def convert_schema_type(in_type):
@@ -43,6 +48,10 @@ def convert_schema_type(in_type):
 def typed_prop_to_binary(prop_val, prop_type):
     # All format strings start with an unsigned char to represent our prop_type enum
     format_str = "=B"
+
+    # Remove leading and trailing whitespace
+    prop_val = prop_val.strip()
+
     # TODO allow ID type specification
     if prop_type == Type.ID or prop_type == Type.LONG:
         try:
@@ -79,6 +88,20 @@ def typed_prop_to_binary(prop_val, prop_type):
         format_str += "%ds" % (len(encoded_str) + 1)
         return struct.pack(format_str, Type.STRING.value, encoded_str)
 
+    elif prop_type == Type.ARRAY:
+        if prop_val[0] != '[' or prop_val[-1] != ']':
+            raise SchemaError("Could not parse '%s' as an array" % prop_val)
+        # Evaluate the array to convert its elements.
+        # (This allows us to handle nested arrays.)
+        array_val = ast.literal_eval(prop_val)
+        # Send array length as a long.
+        array_to_send = struct.pack(format_str + "q", Type.ARRAY.value, len(array_val))
+        # Recursively send each array element as a string.
+        for elem in array_val:
+            array_to_send += inferred_prop_to_binary(str(elem))
+        # Return the full array struct.
+        return array_to_send
+
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
 
@@ -92,6 +115,9 @@ def inferred_prop_to_binary(prop_val):
         # An empty string indicates a NULL property.
         # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
         return struct.pack(format_str, 0)
+
+    # Remove leading and trailing whitespace
+    prop_val = prop_val.strip()
 
     # Try to parse value as an integer.
     try:
@@ -113,6 +139,19 @@ def inferred_prop_to_binary(prop_val):
         return struct.pack(format_str + '?', Type.BOOL.value, False)
     elif prop_val.lower() == 'true':
         return struct.pack(format_str + '?', Type.BOOL.value, True)
+
+    # If the property string is bracket-interpolated, it is an array.
+    if prop_val[0] == '[' and prop_val[-1] == ']':
+        # Evaluate the array to convert its elements.
+        # (This allows us to handle nested arrays.)
+        array_val = ast.literal_eval(prop_val)
+        # Send array length as a long.
+        array_to_send = struct.pack(format_str + "q", Type.ARRAY.value, len(array_val))
+        # Recursively send each array element as a string.
+        for elem in array_val:
+            array_to_send += inferred_prop_to_binary(str(elem))
+        # Return the full array struct.
+        return array_to_send
 
     # If we've reached this point, the property is a string.
     encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
@@ -192,7 +231,7 @@ class EntityFile(object):
                 raise CSVError("Field '%s' had %d colons" % field, len(field))
 
             # Convert the column type.
-            col_type = convert_schema_type(pair[1].upper())
+            col_type = convert_schema_type(pair[1].upper().strip())
 
             # If the column did not have a name but the type requires one, emit an error.
             if len(pair[0]) == 0 and col_type not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
@@ -201,7 +240,8 @@ class EntityFile(object):
                 # We have a column name and a type.
                 # Only store the name if the column's values should be added as properties.
                 if len(pair[0]) > 0 and col_type not in (Type.START_ID, Type.END_ID, Type.IGNORE):
-                    self.column_names[idx] = pair[0]
+                    column_name = pair[0].strip()
+                    self.column_names[idx] = column_name
 
             # Store the column type.
             self.types[idx] = col_type
