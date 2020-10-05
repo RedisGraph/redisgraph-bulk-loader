@@ -19,6 +19,10 @@ https://oss.redislabs.com/redisgraph/
 ## Installation
 The bulk loader can be installed using pip:
 ```
+pip install redisgraph-bulk-loader
+```
+Or
+```
 pip install git+https://github.com/RedisGraph/redisgraph-bulk-loader.git@master
 ```
 
