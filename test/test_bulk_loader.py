@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import csv
 import redis
 import unittest
@@ -636,6 +637,28 @@ class TestBulkLoader(unittest.TestCase):
         node_2 = {'str_col': 'str2', 'arr_col': ['prop1', ['nested_1', 'nested_2'], 5]}
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
+
+    def test16_error_on_schema_failure(self):
+        """Validate that the loader errors on processing non-conformant CSVs with an enforced schema."""
+
+        graphname = "schema_error"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file, delimiter='|')
+            out.writerow(['str_col:STRING', 'arr_col:ARRAY'])
+            out.writerow(['str1', """[1, 0.2, 'nested_str', False]"""])
+            out.writerow(['str2', 'strval'])
+
+        try:
+            runner = CliRunner()
+            runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+                                        '--separator', '|',
+                                        '--enforce-schema',
+                                        graphname], catch_exceptions=False)
+            self.fail() # Should be unreachable
+        except Exception as e:
+            # Verify that the correct exception is raised.
+            self.assertEqual(sys.exc_info()[0].__name__, 'SchemaError')
+            self.assertIn("Could not parse 'strval' as an array", e.args)
 
 
 if __name__ == '__main__':

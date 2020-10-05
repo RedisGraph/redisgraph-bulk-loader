@@ -105,6 +105,20 @@ The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typ
 - If the file has more than 2 fields, all subsequent fields are relationship properties that adhere to the same rules as node properties.
 - Described relationships are always considered to be directed (source->destination).
 
+### Input CSV example
+Store.csv
+```
+storeNum | Location | daysOpen |
+118 | 123 Main St | ['Mon', 'Wed', 'Fri']
+136 | 55 Elm St | ['Sat', 'Sun']
+```
+This CSV would be inserted with the command:
+`redisgraph-bulk-loader StoreGraph --separator \| --nodes Store.csv`
+
+(Since the pipe character has meaning in the terminal, it must be backslash-escaped.)
+
+All `storeNum` properties will be inserted as integers, `Location` will be inserted as strings, and `daysOpen` will be inserted as arrays of strings.
+
 ## Input Schemas
 If the `--enforce-schema` flag is specified, all input CSVs will be expected to specify each column's data type in the header.
 

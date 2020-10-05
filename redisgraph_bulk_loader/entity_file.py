@@ -43,6 +43,19 @@ def convert_schema_type(in_type):
             raise SchemaError("Encountered invalid field type '%s'" % in_type)
 
 
+def array_prop_to_binary(format_str, prop_val):
+    # Evaluate the array to convert its elements.
+    # (This allows us to handle nested arrays.)
+    array_val = ast.literal_eval(prop_val)
+    # Send array length as a long.
+    array_to_send = struct.pack(format_str + "q", Type.ARRAY.value, len(array_val))
+    # Recursively send each array element as a string.
+    for elem in array_val:
+        array_to_send += inferred_prop_to_binary(str(elem))
+        # Return the full array struct.
+    return array_to_send
+
+
 # Convert a property field with an enforced type into a binary stream.
 # Supported property types are string, integer, float, and boolean.
 def typed_prop_to_binary(prop_val, prop_type):
@@ -91,16 +104,7 @@ def typed_prop_to_binary(prop_val, prop_type):
     elif prop_type == Type.ARRAY:
         if prop_val[0] != '[' or prop_val[-1] != ']':
             raise SchemaError("Could not parse '%s' as an array" % prop_val)
-        # Evaluate the array to convert its elements.
-        # (This allows us to handle nested arrays.)
-        array_val = ast.literal_eval(prop_val)
-        # Send array length as a long.
-        array_to_send = struct.pack(format_str + "q", Type.ARRAY.value, len(array_val))
-        # Recursively send each array element as a string.
-        for elem in array_val:
-            array_to_send += inferred_prop_to_binary(str(elem))
-        # Return the full array struct.
-        return array_to_send
+        return array_prop_to_binary(format_str, prop_val)
 
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
     raise Exception("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
@@ -142,16 +146,7 @@ def inferred_prop_to_binary(prop_val):
 
     # If the property string is bracket-interpolated, it is an array.
     if prop_val[0] == '[' and prop_val[-1] == ']':
-        # Evaluate the array to convert its elements.
-        # (This allows us to handle nested arrays.)
-        array_val = ast.literal_eval(prop_val)
-        # Send array length as a long.
-        array_to_send = struct.pack(format_str + "q", Type.ARRAY.value, len(array_val))
-        # Recursively send each array element as a string.
-        for elem in array_val:
-            array_to_send += inferred_prop_to_binary(str(elem))
-        # Return the full array struct.
-        return array_to_send
+        return array_prop_to_binary(format_str, prop_val)
 
     # If we've reached this point, the property is a string.
     encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
