@@ -41,6 +41,8 @@ class TestBulkLoader(unittest.TestCase):
         """Delete temporary files"""
         os.remove('/tmp/nodes.tmp')
         os.remove('/tmp/relations.tmp')
+        os.remove('/tmp/nodes_index.tmp')
+        os.remove('/tmp/nodes_full_text_index.tmp')
         cls.redis_con.flushall()
 
     def validate_exception(self, res, expected_msg):
@@ -684,6 +686,35 @@ class TestBulkLoader(unittest.TestCase):
         r = redis.Redis(host='localhost', port=6379, decode_responses=True)
         res = r.execute_command("GRAPH.EXPLAIN", graphname, 'MATCH (p:Person) WHERE p.age > 16 RETURN p')
         self.assertIn('        Index Scan | (p:Person)', res)
+
+    def test18_ensure_full_text_index_is_created(self):
+        graphname = "index_full_text_test"
+        with open('/tmp/nodes_full_text_index.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file, delimiter='|')
+            out.writerow(['name:STRING'])
+            out.writerow(['Emperor Tamarin'])
+            out.writerow(['Golden Lion Tamarin'])
+            out.writerow(['Cotton-top Tamarin'])
+            out.writerow(['Olive Baboon'])
+        csv_file.close()
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'Monkeys', '/tmp/nodes_full_text_index.tmp',
+                                          '--full-text-index', 'Monkeys:name',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('4 nodes created', res.output)
+        self.assertIn('Indices created: 1', res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query("CALL db.idx.fulltext.queryNodes('Monkeys', 'tamarin') YIELD node RETURN node.name")
+        expected_result = [ ['Emperor Tamarin'],['Golden Lion Tamarin'], ['Cotton-top Tamarin'] ]
+
+        # We should find only the tamarins
+        self.assertEqual(query_result.result_set, expected_result)
+
 
 
 if __name__ == '__main__':
