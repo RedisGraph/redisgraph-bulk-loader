@@ -660,6 +660,31 @@ class TestBulkLoader(unittest.TestCase):
             self.assertEqual(sys.exc_info()[0].__name__, 'SchemaError')
             self.assertIn("Could not parse 'strval' as an array", e.args)
 
+    def test17_ensure_index_is_created(self):
+        graphname = "index_test"
+        with open('/tmp/nodes_index.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file, delimiter='|')
+            out.writerow(['name:STRING', 'age:INT'])
+            out.writerow(['Alex', 17])
+            out.writerow(['Sean', 12])
+        csv_file.close()
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'Person', '/tmp/nodes_index.tmp',
+                                          '--separator', '|',
+                                          '--index', 'Person:age',
+                                          '--enforce-schema',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('2 nodes created', res.output)
+        self.assertIn('Indices created: 1', res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        res = r.execute_command("GRAPH.EXPLAIN", graphname, 'MATCH (p:Person) WHERE p.age > 16 RETURN p')
+        self.assertIn('        Index Scan | (p:Person)', res)
+
 
 if __name__ == '__main__':
     unittest.main()
