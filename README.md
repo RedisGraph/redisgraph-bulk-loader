@@ -54,6 +54,7 @@ python3 redisgraph_bulk_loader/bulk_insert.py GRAPHNAME [OPTIONS]
 |  -t   | --max-token-count INT      |            (Debug argument) Max number of tokens sent in each Redis query (default 1024)             |
 |  -b   | --max-buffer-size INT      |               (Debug argument) Max batch size (MBs) of each Redis query (default 4096)               |
 |  -c   | --max-token-size INT       |              (Debug argument) Max size (MBs) of each token sent to Redis (default 500)               |
+|  -i   | --index Label:Property     |              After bulk import, create an Index on provided Label:Property pair (optional)           |
 
 
 The only required arguments are the name to give the newly-created graph (which can appear anywhere) and at least one node CSV file.
