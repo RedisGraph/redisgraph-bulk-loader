@@ -63,7 +63,8 @@ def process_entities(entities):
 @click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
-def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, quote, max_token_count, max_buffer_size, max_token_size, index):
+@click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
+def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
@@ -116,6 +117,7 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
     end_time = timer()
     query_buf.report_completion(end_time - start_time)
 
+    # Add in Graph Indices after graph creation
     for i in index:
         l, p = i.split(":")
         print("Creating Index on Label: %s, Property: %s" %(l, p))
@@ -126,6 +128,19 @@ def bulk_insert(graph, host, port, password, nodes, nodes_with_label, relations,
         except redis.exceptions.ResponseError as e:
             print("Unable to create Index on Label: %s, Property %s" %(l, p))
             print(e)
+
+    # Add in Full Text Search Indices after graph creation
+    for i in full_text_index:
+        l, p = i.split(":")
+        print("Creating Full Text Search Index on Label: %s, Property: %s" %(l, p))
+        try:
+            index_create = client.execute_command("GRAPH.QUERY", graph, "CALL db.idx.fulltext.createNodeIndex('%s', '%s')" %(l, p))
+            print(index_create[-1][0].decode("utf-8"))
+        except redis.exceptions.ResponseError as e:
+            print("Unable to create Full Text Search Index on Label: %s, Property %s" %(l, p))
+            print(e)
+        except:
+            print("Unknown Error: Unable to create Full Text Search Index on Label: %s, Property %s" %(l, p))
 
 if __name__ == '__main__':
     bulk_insert()
