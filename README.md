@@ -27,9 +27,9 @@ pip install git+https://github.com/RedisGraph/redisgraph-bulk-loader.git@master
 ```
 
 ## Usage
-Pip installation exposes `redisgraph-bulk-insert` as a command to invoke this tool:
+Pip installation exposes `redisgraph-bulk-loader` as a command to invoke this tool:
 ```
-redisgraph-bulk-insert GRAPHNAME [OPTIONS]
+redisgraph-bulk-loader GRAPHNAME [OPTIONS]
 ```
 
 Installation by cloning the repository allows the script to be invoked via Python like so:
@@ -62,7 +62,7 @@ The only required arguments are the name to give the newly-created graph (which 
 The nodes and relationship flags should be specified once per input file.
 
 ```
-redisgraph-bulk-insert GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
+redisgraph-bulk-loader GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
 ```
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this example, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
 
