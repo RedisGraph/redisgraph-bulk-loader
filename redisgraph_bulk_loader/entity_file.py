@@ -66,7 +66,7 @@ def typed_prop_to_binary(prop_val, prop_type):
     prop_val = prop_val.strip()
 
     # TODO allow ID type specification
-    if prop_type == Type.ID or prop_type == Type.LONG:
+    if prop_type == Type.LONG:
         try:
             numeric_prop = int(prop_val)
             return struct.pack(format_str + "q", Type.LONG.value, numeric_prop)
@@ -75,7 +75,7 @@ def typed_prop_to_binary(prop_val, prop_type):
             if prop_type == Type.LONG:
                 raise SchemaError("Could not parse '%s' as a long" % prop_val)
 
-    elif prop_type == Type.ID or prop_type == Type.DOUBLE:
+    elif prop_type == Type.DOUBLE:
         try:
             numeric_prop = float(prop_val)
             if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
@@ -94,7 +94,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         else:
             raise SchemaError("Could not parse '%s' as a boolean" % prop_val)
 
-    elif prop_type == Type.STRING:
+    elif prop_type== Type.ID or  prop_type == Type.STRING:
         # If we've reached this point, the property is a string
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
