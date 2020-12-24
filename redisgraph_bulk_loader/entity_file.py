@@ -146,7 +146,10 @@ def inferred_prop_to_binary(prop_val):
 
     # If the property string is bracket-interpolated, it is an array.
     if prop_val[0] == '[' and prop_val[-1] == ']':
-        return array_prop_to_binary(format_str, prop_val)
+        try:
+            return array_prop_to_binary(format_str, prop_val)
+        except:
+            pass
 
     # If we've reached this point, the property is a string.
     encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
