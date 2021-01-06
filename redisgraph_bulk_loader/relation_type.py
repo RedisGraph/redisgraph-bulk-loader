@@ -10,8 +10,6 @@ class RelationType(EntityFile):
     def __init__(self, query_buffer, infile, type_str, config):
         super(RelationType, self).__init__(infile, type_str, config)
         self.query_buffer = query_buffer
-        self.start_namespace = None
-        self.end_namespace = None
 
     def process_schemaless_header(self, header):
         if self.column_count < 2:
@@ -37,6 +35,8 @@ class RelationType(EntityFile):
 
         self.start_id = self.types.index(Type.START_ID)
         self.end_id = self.types.index(Type.END_ID)
+        self.start_namespace = None
+        self.end_namespace = None
         # Capture namespaces of start and end IDs if provided
         start_match = re.search(r"\((\w+)\)", header[self.start_id])
         if start_match:

@@ -583,8 +583,8 @@ class TestBulkLoader(unittest.TestCase):
         graph = Graph(graphname, self.redis_con)
         query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
 
-        expected_result = [[0, 'Jeffrey', 'User', 0, 20, 'Post'],
-                           [1, 'Filipe', 'User', 1, 40, 'Post']]
+        expected_result = [['0', 'Jeffrey', 'User', '0', 20, 'Post'],
+                           ['1', 'Filipe', 'User', '1', 40, 'Post']]
         self.assertEqual(query_result.result_set, expected_result)
 
     def test14_array_properties_inferred(self):
