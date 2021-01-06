@@ -10,6 +10,8 @@ class RelationType(EntityFile):
     def __init__(self, query_buffer, infile, type_str, config):
         super(RelationType, self).__init__(infile, type_str, config)
         self.query_buffer = query_buffer
+        self.start_namespace = None
+        self.end_namespace = None
 
     def process_schemaless_header(self, header):
         if self.column_count < 2:
