@@ -34,5 +34,6 @@ setup(
     entry_points='''
         [console_scripts]
         redisgraph-bulk-loader=redisgraph_bulk_loader.bulk_insert:bulk_insert
+        redisgraph-bulk-update=redisgraph_bulk_loader.bulk_update:bulk_update
     '''
 )
