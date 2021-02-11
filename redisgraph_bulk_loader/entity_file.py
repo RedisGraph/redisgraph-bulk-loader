@@ -94,7 +94,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         else:
             raise SchemaError("Could not parse '%s' as a boolean" % prop_val)
 
-    elif prop_type== Type.ID or  prop_type == Type.STRING:
+    elif prop_type == Type.ID or prop_type == Type.STRING:
         # If we've reached this point, the property is a string
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
