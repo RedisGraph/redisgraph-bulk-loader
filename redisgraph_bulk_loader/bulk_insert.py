@@ -40,6 +40,9 @@ def process_entities(entities):
         entity.query_buffer.buffer_size += added_size
 
 
+################################################################################
+# Bulk loader
+################################################################################
 # Command-line arguments
 @click.command()
 @click.argument('graph')
@@ -124,27 +127,28 @@ def bulk_insert(graph, host, port, password, unix_socket_path, nodes, nodes_with
     # Add in Graph Indices after graph creation
     for i in index:
         l, p = i.split(":")
-        print("Creating Index on Label: %s, Property: %s" %(l, p))
+        print("Creating Index on Label: %s, Property: %s" % (l, p))
         try:
-            index_create = client.execute_command("GRAPH.QUERY", graph, "CREATE INDEX ON :%s(%s)" %(l, p))
+            index_create = client.execute_command("GRAPH.QUERY", graph, "CREATE INDEX ON :%s(%s)" % (l, p))
             for z in index_create:
-                print(z[0].decode("utf-8") )
+                print(z[0].decode("utf-8"))
         except redis.exceptions.ResponseError as e:
-            print("Unable to create Index on Label: %s, Property %s" %(l, p))
+            print("Unable to create Index on Label: %s, Property %s" % (l, p))
             print(e)
 
     # Add in Full Text Search Indices after graph creation
     for i in full_text_index:
         l, p = i.split(":")
-        print("Creating Full Text Search Index on Label: %s, Property: %s" %(l, p))
+        print("Creating Full Text Search Index on Label: %s, Property: %s" % (l, p))
         try:
-            index_create = client.execute_command("GRAPH.QUERY", graph, "CALL db.idx.fulltext.createNodeIndex('%s', '%s')" %(l, p))
+            index_create = client.execute_command("GRAPH.QUERY", graph, "CALL db.idx.fulltext.createNodeIndex('%s', '%s')" % (l, p))
             print(index_create[-1][0].decode("utf-8"))
         except redis.exceptions.ResponseError as e:
-            print("Unable to create Full Text Search Index on Label: %s, Property %s" %(l, p))
+            print("Unable to create Full Text Search Index on Label: %s, Property %s" % (l, p))
             print(e)
         except:
-            print("Unknown Error: Unable to create Full Text Search Index on Label: %s, Property %s" %(l, p))
+            print("Unknown Error: Unable to create Full Text Search Index on Label: %s, Property %s" % (l, p))
+
 
 if __name__ == '__main__':
     bulk_insert()
