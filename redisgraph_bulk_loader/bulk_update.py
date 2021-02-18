@@ -1,4 +1,3 @@
-import io
 import sys
 import csv
 import redis
@@ -16,7 +15,7 @@ class BulkUpdate:
     def __init__(self, graph, max_token_size, separator, no_header, filename, query, variable_name, client):
         self.separator = separator
         self.no_header = no_header
-        self.query = "".join(["UNWIND $rows AS ", variable_name, " ", query])
+        self.query = " ".join(["UNWIND $rows AS", variable_name, query])
         self.buffer_size = 0
         self.max_token_size = max_token_size * 1024 * 1024 - utf8len(self.query)
         self.graph = graph
@@ -43,7 +42,7 @@ class BulkUpdate:
             self.statistics[key] = val
 
     def emit_buffer(self, rows):
-        command = rows + self.query
+        command = " ".join([rows, self.query])
         try:
             result = self.client.execute_command("GRAPH.QUERY", self.graph, command)
         except ResponseError as e:
@@ -63,7 +62,7 @@ class BulkUpdate:
                     (cell[0] != '[' and cell.lower != ']') and # Check for array
                     (cell[0] != "\"" and cell[-1] != "\"") and # Check for double-quoted string
                     (cell[0] != "\'" and cell[-1] != "\'")): # Check for single-quoted string
-                cell = "\"" + cell + "\""
+                cell = "".join(["\"", cell, "\""])
         return cell
 
     def process_update_csv(self):
@@ -75,35 +74,28 @@ class BulkUpdate:
 
             reader = csv.reader(f, delimiter=self.separator, skipinitialspace=True, quoting=csv.QUOTE_NONE, escapechar='\\')
 
-            rows_str = "CYPHER rows=["
-            first = True
+            rows_strs = []
             with click.progressbar(reader, length=entity_count, label=self.graph) as reader:
                 for row in reader:
                     # Prepare the string representation of the current row.
                     row = ",".join([self.quote_string(cell) for cell in row])
-                    next_line = "[" + row.strip() + "]"
+                    next_line = "".join(["[", row.strip(), "]"])
 
                     # Emit buffer now if the max token size would be exceeded by this addition.
                     added_size = utf8len(next_line) + 1 # Add one to compensate for the added comma.
                     if self.buffer_size + added_size > self.max_token_size:
-                        # Add a closing bracket
-                        rows_str += "]"
-                        self.emit_buffer(rows_str)
-                        rows_str = "CYPHER rows=["
+                        # Concatenate all rows into a valid parameter set
+                        buf = "".join(["CYPHER rows=[", ",".join(rows_strs), "]"])
+                        self.emit_buffer(buf)
+                        rows_strs = []
                         self.buffer_size = 0
-                        first = True
-
-                    # Add a comma separator if this is not the first row in the query.
-                    if not first:
-                        rows_str += ","
-                    first = False
 
                     # Concatenate the string into the rows string representation.
-                    rows_str += next_line
+                    rows_strs.append(next_line)
                     self.buffer_size += added_size
-            # Add a closing bracket
-            rows_str += "]"
-            self.emit_buffer(rows_str)
+            # Concatenate all rows into a valid parameter set
+            buf = "".join(["CYPHER rows=[", ",".join(rows_strs), "]"])
+            self.emit_buffer(buf)
 
 
 ################################################################################

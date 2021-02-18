@@ -189,7 +189,7 @@ python3 redisgraph_bulk_loader/bulk_update.py GRAPHNAME [OPTIONS]
 |  -p   | --port INTEGER           |             Redis server port (default: 6379)              |
 |  -a   | --password TEXT          |           Redis server password (default: none)            |
 |  -u   | --unix-socket-path TEXT  |           Redis unix socket path (default: none)           |
-|  -e   | --query TEXT             |                   Query to run on server                   |
+|  -q   | --query TEXT             |                   Query to run on server                   |
 |  -v   | --variable-name TEXT     |   Variable name for row array in queries (default: row)    |
 |  -c   | --csv TEXT               |                   Path to CSV input file                   |
 |  -o   | --separator TEXT         |             Field token separator in CSV file              |
