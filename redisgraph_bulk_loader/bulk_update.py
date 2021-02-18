@@ -16,19 +16,19 @@ class BulkUpdate:
     def __init__(self, graph, max_token_size, separator, no_header, filename, query, variable_name, client):
         self.separator = separator
         self.no_header = no_header
-        self.query = " UNWIND $rows AS " + variable_name + " " + query
+        self.query = "".join(["UNWIND $rows AS ", variable_name, " ", query])
+        self.buffer_size = 0
         self.max_token_size = max_token_size * 1024 * 1024 - utf8len(self.query)
-        self.infile = io.open(filename, 'rt')
         self.graph = graph
+        self.filename = filename
         self.client = client
         self.statistics = {}
 
     # Count number of rows in file.
     def count_entities(self):
         entities_count = 0
-        entities_count = sum(1 for line in self.infile)
-        # seek back
-        self.infile.seek(0)
+        with open(self.filename, 'rt') as f:
+            entities_count = sum(1 for line in f)
         return entities_count
 
     def update_statistics(self, result):
@@ -69,38 +69,41 @@ class BulkUpdate:
     def process_update_csv(self):
         entity_count = self.count_entities()
 
-        if self.no_header is False:
-            next(self.infile) # skip header
+        with open(self.filename, 'rt') as f:
+            if self.no_header is False:
+                next(f) # skip header
 
-        reader = csv.reader(self.infile, delimiter=self.separator, skipinitialspace=True, quoting=csv.QUOTE_NONE, escapechar='\\')
+            reader = csv.reader(f, delimiter=self.separator, skipinitialspace=True, quoting=csv.QUOTE_NONE, escapechar='\\')
 
-        rows_str = "CYPHER rows=["
-        first = True
-        with click.progressbar(reader, length=entity_count, label=self.graph) as reader:
-            for row in reader:
-                # Prepare the string representation of the current row.
-                row = ",".join([self.quote_string(cell) for cell in row])
-                next_line = "[" + row.strip() + "]"
+            rows_str = "CYPHER rows=["
+            first = True
+            with click.progressbar(reader, length=entity_count, label=self.graph) as reader:
+                for row in reader:
+                    # Prepare the string representation of the current row.
+                    row = ",".join([self.quote_string(cell) for cell in row])
+                    next_line = "[" + row.strip() + "]"
 
-                # Emit buffer now if the max token size would be exceeded by this addition.
-                if utf8len(rows_str) + utf8len(next_line) > self.max_token_size:
-                    # Add a closing bracket
-                    rows_str += "]"
-                    self.emit_buffer(rows_str)
-                    rows_str = "CYPHER rows=["
-                    first = True
+                    # Emit buffer now if the max token size would be exceeded by this addition.
+                    added_size = utf8len(next_line) + 1 # Add one to compensate for the added comma.
+                    if self.buffer_size + added_size > self.max_token_size:
+                        # Add a closing bracket
+                        rows_str += "]"
+                        self.emit_buffer(rows_str)
+                        rows_str = "CYPHER rows=["
+                        self.buffer_size = 0
+                        first = True
 
-                # Add a comma separator if this is not the first row in the query.
-                if not first:
-                    rows_str += ","
-                first = False
+                    # Add a comma separator if this is not the first row in the query.
+                    if not first:
+                        rows_str += ","
+                    first = False
 
-                # Concatenate the string into the rows string representation.
-                rows_str += next_line
-        # Add a closing bracket
-        rows_str += "]"
-        self.emit_buffer(rows_str)
-        self.infile.close()
+                    # Concatenate the string into the rows string representation.
+                    rows_str += next_line
+                    self.buffer_size += added_size
+            # Add a closing bracket
+            rows_str += "]"
+            self.emit_buffer(rows_str)
 
 
 ################################################################################
@@ -115,7 +118,7 @@ class BulkUpdate:
 @click.option('--password', '-a', default=None, help='Redis server password')
 @click.option('--unix-socket-path', '-u', default=None, help='Redis server unix socket path')
 # Cypher query options
-@click.option('--query', '-e', help='Query to run on server')
+@click.option('--query', '-q', help='Query to run on server')
 @click.option('--variable-name', '-v', default='row', help='Variable name for row array in queries (default: row)')
 # CSV file options
 @click.option('--csv', '-c', help='Path to CSV input file')

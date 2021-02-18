@@ -145,8 +145,8 @@ class TestBulkUpdate(unittest.TestCase):
         graphname = "variable_name"
         runner = CliRunner()
 
-        csv_path = os.path.dirname(os.path.abspath(__file__)) + '/../example/'
-        person_file = csv_path + 'Person.csv'
+        csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../example/')
+        person_file = os.path.join(csv_path, 'Person.csv')
         # Build the social graph again with a max token count of 1.
         res = runner.invoke(bulk_update, ['--csv', person_file,
                                           '--query', 'CREATE (p:Person) SET p.name = line[0], p.age = line[1], p.gender = line[2], p.status = line[3]',
@@ -254,3 +254,34 @@ class TestBulkUpdate(unittest.TestCase):
 
         self.assertNotEqual(res.exit_code, 0)
         self.assertIn("Cannot merge node", str(res.exception))
+
+    def test07_invalid_inputs(self):
+        """Validate that the bulk updater handles invalid inputs incorrectly."""
+        graphname = "tmpgraph1"
+
+        # Attempt to insert a non-existent CSV file.
+        runner = CliRunner()
+        res = runner.invoke(bulk_update, ['--csv', '/tmp/fake_file.csv',
+                                          '--query', 'MERGE (:L {val: NULL})',
+                                          graphname])
+
+        self.assertNotEqual(res.exit_code, 0)
+        self.assertIn("No such file", str(res.exception))
+
+        # Write temporary files
+        with open('/tmp/csv.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(["id", "name"])
+            out.writerow([0, "a"])
+            out.writerow([5, "b"])
+            out.writerow([3, "c"])
+
+        # Attempt to access a non-existent column.
+        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+                                          '--query', 'CREATE (:L {val: row[3]})',
+                                          graphname])
+
+        #  self.assertNotEqual(res.exit_code, 0)
+        #  import ipdb
+        #  ipdb.set_trace()
+        #  self.assertIn("No such file", str(res.exception))
