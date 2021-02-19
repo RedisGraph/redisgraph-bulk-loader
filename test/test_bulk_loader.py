@@ -682,7 +682,6 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('2 nodes created', res.output)
         self.assertIn('Indices created: 1', res.output)
 
-        graph = Graph(graphname, self.redis_con)
         r = redis.Redis(host='localhost', port=6379, decode_responses=True)
         res = r.execute_command("GRAPH.EXPLAIN", graphname, 'MATCH (p:Person) WHERE p.age > 16 RETURN p')
         self.assertIn('        Index Scan | (p:Person)', res)
@@ -710,11 +709,10 @@ class TestBulkLoader(unittest.TestCase):
 
         graph = Graph(graphname, self.redis_con)
         query_result = graph.query("CALL db.idx.fulltext.queryNodes('Monkeys', 'tamarin') YIELD node RETURN node.name")
-        expected_result = [ ['Emperor Tamarin'],['Golden Lion Tamarin'], ['Cotton-top Tamarin'] ]
+        expected_result = [['Emperor Tamarin'], ['Golden Lion Tamarin'], ['Cotton-top Tamarin']]
 
         # We should find only the tamarins
         self.assertEqual(query_result.result_set, expected_result)
-
 
 
 if __name__ == '__main__':

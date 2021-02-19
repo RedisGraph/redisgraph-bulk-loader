@@ -27,9 +27,9 @@ pip install git+https://github.com/RedisGraph/redisgraph-bulk-loader.git@master
 ```
 
 ## Usage
-Pip installation exposes `redisgraph-bulk-insert` as a command to invoke this tool:
+Pip installation exposes `redisgraph-bulk-loader` as a command to invoke this tool:
 ```
-redisgraph-bulk-insert GRAPHNAME [OPTIONS]
+redisgraph-bulk-loader GRAPHNAME [OPTIONS]
 ```
 
 Installation by cloning the repository allows the script to be invoked via Python like so:
@@ -63,7 +63,7 @@ The only required arguments are the name to give the newly-created graph (which 
 The nodes and relationship flags should be specified once per input file.
 
 ```
-redisgraph-bulk-insert GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
+redisgraph-bulk-loader GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
 ```
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this example, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
 
@@ -172,3 +172,36 @@ Inserting these CSVs with the command:
 
 Will produce a graph named SocialGraph with 2 users, Jeffrey and Filipe. Jeffrey follows Filipe, and that relation has a reaction_count of 25. Filipe also follows Jeffrey, with a reaction_count of 10.
 
+## Performing bulk updates
+Pip installation also exposes the command `redisgraph-bulk-update`:
+```
+redisgraph-bulk-update GRAPHNAME [OPTIONS]
+```
+
+Installation by cloning the repository allows the bulk updater to be invoked via Python like so:
+```
+python3 redisgraph_bulk_loader/bulk_update.py GRAPHNAME [OPTIONS]
+```
+
+| Flags | Extended flags           |                         Parameter                          |
+|:-----:|--------------------------|:----------------------------------------------------------:|
+|  -h   | --host TEXT              |           Redis server host (default: 127.0.0.1)           |
+|  -p   | --port INTEGER           |             Redis server port (default: 6379)              |
+|  -a   | --password TEXT          |           Redis server password (default: none)            |
+|  -u   | --unix-socket-path TEXT  |           Redis unix socket path (default: none)           |
+|  -q   | --query TEXT             |                   Query to run on server                   |
+|  -v   | --variable-name TEXT     |   Variable name for row array in queries (default: row)    |
+|  -c   | --csv TEXT               |                   Path to CSV input file                   |
+|  -o   | --separator TEXT         |             Field token separator in CSV file              |
+|  -n   | --no-header              |             If set, the CSV file has no header             |
+|  -t   | --max-token-size INTEGER | Max size of each token in megabytes (default 500, max 512) |
+
+The bulk updater allows a CSV file to be read in batches and committed to RedisGraph according to the provided query.
+
+For example, given the CSV files described in [Input Schema CSV examples](#input-schema-csv-examples), the bulk loader could create the same nodes and relationships with the commands:
+```
+redisgraph-bulk-update SocialGraph --csv User.csv --query "MERGE (:User {id: row[0], name: row[1], rank: row[2]})"
+redisgraph-bulk-update SocialGraph --csv FOLLOWS.csv --query "MATCH (start {id: row[0]}), (end {id: row[1]}) MERGE (start)-[f:FOLLOWS]->(end) SET f.reaction_count = row[2]"
+```
+
+When using the bulk updater, it is essential to sanitize CSV inputs beforehand, as RedisGraph *will* commit changes to the graph incrementally. As such, malformed inputs may leave the graph in a partially-updated state.
