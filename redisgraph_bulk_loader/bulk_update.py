@@ -2,7 +2,7 @@ import sys
 import csv
 import redis
 import click
-from redis import ResponseError
+from redisgraph import Graph
 from timeit import default_timer as timer
 
 
@@ -10,46 +10,39 @@ def utf8len(s):
     return len(s.encode('utf-8'))
 
 
+# Count number of rows in file.
+def count_entities(filename):
+    entities_count = 0
+    with open(filename, 'rt') as f:
+        entities_count = sum(1 for line in f)
+    return entities_count
+
+
 class BulkUpdate:
     """Handler class for emitting bulk update commands"""
-    def __init__(self, graph, max_token_size, separator, no_header, filename, query, variable_name, client):
+    def __init__(self, graph_name, max_token_size, separator, no_header, filename, query, variable_name, client):
         self.separator = separator
         self.no_header = no_header
         self.query = " ".join(["UNWIND $rows AS", variable_name, query])
         self.buffer_size = 0
         self.max_token_size = max_token_size * 1024 * 1024 - utf8len(self.query)
-        self.graph = graph
         self.filename = filename
-        self.client = client
+        self.graph_name = graph_name
+        self.graph = Graph(graph_name, client)
         self.statistics = {}
 
-    # Count number of rows in file.
-    def count_entities(self):
-        entities_count = 0
-        with open(self.filename, 'rt') as f:
-            entities_count = sum(1 for line in f)
-        return entities_count
-
     def update_statistics(self, result):
-        for raw_stat in result[0]:
-            stat = raw_stat.split(": ")
-            key = stat[0]
+        for key, new_val in result.statistics.items():
             try:
                 val = self.statistics[key]
             except KeyError:
                 val = 0
-            val += float(stat[1].split(" ")[0])
+            val += new_val
             self.statistics[key] = val
 
     def emit_buffer(self, rows):
         command = " ".join([rows, self.query])
-        try:
-            result = self.client.execute_command("GRAPH.QUERY", self.graph, command)
-        except ResponseError as e:
-            raise e
-        # If we encountered a run-time error, the last response element will be an exception.
-        if isinstance(result[-1], ResponseError):
-            raise result[-1]
+        result = self.graph.query(command)
         self.update_statistics(result)
 
     def quote_string(self, cell):
@@ -65,8 +58,14 @@ class BulkUpdate:
                 cell = "".join(["\"", cell, "\""])
         return cell
 
+    # Raise an exception if the query triggers a compile-time error
+    def validate_query(self):
+        command = " ".join(["CYPHER rows=[]", self.query])
+        # The plan call will raise an error if the query is malformed or invalid.
+        self.graph.execution_plan(command)
+
     def process_update_csv(self):
-        entity_count = self.count_entities()
+        entity_count = count_entities(self.filename)
 
         with open(self.filename, 'rt') as f:
             if self.no_header is False:
@@ -75,7 +74,7 @@ class BulkUpdate:
             reader = csv.reader(f, delimiter=self.separator, skipinitialspace=True, quoting=csv.QUOTE_NONE, escapechar='\\')
 
             rows_strs = []
-            with click.progressbar(reader, length=entity_count, label=self.graph) as reader:
+            with click.progressbar(reader, length=entity_count, label=self.graph_name) as reader:
                 for row in reader:
                     # Prepare the string representation of the current row.
                     row = ",".join([self.quote_string(cell) for cell in row])
@@ -145,6 +144,7 @@ def bulk_update(graph, host, port, password, unix_socket_path, query, variable_n
         pass
 
     updater = BulkUpdate(graph, max_token_size, separator, no_header, csv, query, variable_name, client)
+    updater.validate_query()
     updater.process_update_csv()
 
     end_time = timer()

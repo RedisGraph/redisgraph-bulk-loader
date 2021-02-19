@@ -97,9 +97,34 @@ class TestBulkUpdate(unittest.TestCase):
                            ["c", "c2"]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test03_custom_delimiter(self):
-        """Validate that non-comma delimiters produce the correct results."""
+    def test03_datatypes(self):
+        """Validate that all RedisGraph datatypes are supported by the bulk updater."""
         graphname = "tmpgraph2"
+        # Write temporary files
+        with open('/tmp/csv.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow([0, 1.5, "true", "string", "[1, 'nested_str']"])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+                                          '--query', 'CREATE (a:L) SET a.intval = row[0], a.doubleval = row[1], a.boolval = row[2], a.stringval = row[3], a.arrayval = row[4]',
+                                          '--no-header',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('Nodes created: 1', res.output)
+        self.assertIn('Properties set: 5', res.output)
+
+        tmp_graph = Graph(graphname, self.redis_con)
+        query_result = tmp_graph.query('MATCH (a) RETURN a.intval, a.doubleval, a.boolval, a.stringval, a.arrayval')
+
+        # Validate that the expected results are all present in the graph
+        expected_result = [[0, 1.5, True, "string", "[1,'nested_str']"]]
+        self.assertEqual(query_result.result_set, expected_result)
+
+    def test04_custom_delimiter(self):
+        """Validate that non-comma delimiters produce the correct results."""
+        graphname = "tmpgraph3"
         # Write temporary files
         with open('/tmp/csv.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file, delimiter='|')
@@ -140,7 +165,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertNotIn('Nodes created', res.output)
         self.assertNotIn('Properties set', res.output)
 
-    def test04_custom_variable_name(self):
+    def test05_custom_variable_name(self):
         """Validate that the user can specify the name of the 'row' query variable."""
         graphname = "variable_name"
         runner = CliRunner()
@@ -178,9 +203,9 @@ class TestBulkUpdate(unittest.TestCase):
                            ['Valerie Abigail Arad', 31, 'female', 'married']]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test05_no_header(self):
+    def test06_no_header(self):
         """Validate that the '--no-header' option works properly."""
-        graphname = "tmpgraph3"
+        graphname = "tmpgraph4"
         # Write temporary files
         with open('/tmp/csv.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file)
@@ -208,7 +233,7 @@ class TestBulkUpdate(unittest.TestCase):
                            [5, "b"]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test06_batched_update(self):
+    def test07_batched_update(self):
         """Validate that updates performed over multiple batches produce the correct results."""
         graphname = "batched_update"
 
@@ -238,9 +263,9 @@ class TestBulkUpdate(unittest.TestCase):
         expected_result = [[prop_str]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test07_runtime_error(self):
+    def test08_runtime_error(self):
         """Validate that run-time errors are captured by the bulk updater."""
-        graphname = "tmpgraph1"
+        graphname = "tmpgraph5"
 
         # Write temporary files
         with open('/tmp/csv.tmp', mode='w') as csv_file:
@@ -255,9 +280,21 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertNotEqual(res.exit_code, 0)
         self.assertIn("Cannot merge node", str(res.exception))
 
-    def test07_invalid_inputs(self):
+    def test09_compile_time_error(self):
+        """Validate that malformed queries trigger an early exit from the bulk updater."""
+        graphname = "tmpgraph5"
+        runner = CliRunner()
+        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+                                          '--query', 'CREATE (:L {val: row[0], val2: undefined_identifier})',
+                                          '--no-header',
+                                          graphname])
+
+        self.assertNotEqual(res.exit_code, 0)
+        self.assertIn("undefined_identifier not defined", str(res.exception))
+
+    def test10_invalid_inputs(self):
         """Validate that the bulk updater handles invalid inputs incorrectly."""
-        graphname = "tmpgraph1"
+        graphname = "tmpgraph6"
 
         # Attempt to insert a non-existent CSV file.
         runner = CliRunner()
@@ -267,21 +304,3 @@ class TestBulkUpdate(unittest.TestCase):
 
         self.assertNotEqual(res.exit_code, 0)
         self.assertIn("No such file", str(res.exception))
-
-        # Write temporary files
-        with open('/tmp/csv.tmp', mode='w') as csv_file:
-            out = csv.writer(csv_file)
-            out.writerow(["id", "name"])
-            out.writerow([0, "a"])
-            out.writerow([5, "b"])
-            out.writerow([3, "c"])
-
-        # Attempt to access a non-existent column.
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
-                                          '--query', 'CREATE (:L {val: row[3]})',
-                                          graphname])
-
-        #  self.assertNotEqual(res.exit_code, 0)
-        #  import ipdb
-        #  ipdb.set_trace()
-        #  self.assertIn("No such file", str(res.exception))
