@@ -115,13 +115,14 @@ def typed_prop_to_binary(prop_val, prop_type):
 def inferred_prop_to_binary(prop_val):
     # All format strings start with an unsigned char to represent our prop_type enum
     format_str = "=B"
+
+    # Remove leading and trailing whitespace
+    prop_val = prop_val.strip()
+
     if prop_val == "":
         # An empty string indicates a NULL property.
         # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
         return struct.pack(format_str, 0)
-
-    # Remove leading and trailing whitespace
-    prop_val = prop_val.strip()
 
     # Try to parse value as an integer.
     try:
