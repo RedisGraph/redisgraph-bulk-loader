@@ -65,6 +65,11 @@ def typed_prop_to_binary(prop_val, prop_type):
     # Remove leading and trailing whitespace
     prop_val = prop_val.strip()
 
+    if prop_val == "":
+        # An empty string indicates a NULL property.
+        # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
+        return struct.pack(format_str, 0)
+
     # TODO allow ID type specification
     if prop_type == Type.LONG:
         try:
