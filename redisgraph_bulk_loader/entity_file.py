@@ -65,6 +65,11 @@ def typed_prop_to_binary(prop_val, prop_type):
     # Remove leading and trailing whitespace
     prop_val = prop_val.strip()
 
+    if prop_val == "":
+        # An empty string indicates a NULL property.
+        # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
+        return struct.pack(format_str, 0)
+
     # TODO allow ID type specification
     if prop_type == Type.LONG:
         try:
@@ -107,7 +112,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         return array_prop_to_binary(format_str, prop_val)
 
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
-    raise Exception("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
+    raise SchemaError("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
 
 
 # Convert a single CSV property field with an inferred type into a binary stream.
@@ -227,14 +232,14 @@ class EntityFile(object):
             # Multiple colons found in column name, emit error.
             # TODO might need to check for backtick escapes
             if len(pair) > 2:
-                raise CSVError("Field '%s' had %d colons" % field, len(field))
+                raise CSVError("%s: Field '%s' had %d colons" % (self.infile.name, field, len(field)))
 
             # Convert the column type.
             col_type = convert_schema_type(pair[1].upper().strip())
 
             # If the column did not have a name but the type requires one, emit an error.
             if len(pair[0]) == 0 and col_type not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
-                raise SchemaError("Each property in the header should be a colon-separated pair")
+                raise SchemaError("%s: Each property in the header should be a colon-separated pair" % (self.infile.name))
             else:
                 # We have a column name and a type.
                 # Only store the name if the column's values should be added as properties.
