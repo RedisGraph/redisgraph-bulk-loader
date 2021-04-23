@@ -660,7 +660,7 @@ class TestBulkLoader(unittest.TestCase):
         except Exception as e:
             # Verify that the correct exception is raised.
             self.assertEqual(sys.exc_info()[0].__name__, 'SchemaError')
-            self.assertIn("Could not parse 'strval' as an array", e.args)
+            self.assertIn("Could not parse 'strval' as an array", str(e))
 
     def test17_ensure_index_is_created(self):
         graphname = "index_test"

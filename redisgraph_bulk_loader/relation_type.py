@@ -61,12 +61,16 @@ class RelationType(EntityFile):
                     src = self.query_buffer.nodes[start_id]
                     dest = self.query_buffer.nodes[end_id]
                 except KeyError as e:
-                    print("Relationship specified a non-existent identifier. src: %s; dest: %s" % (row[self.start_id], row[self.end_id]))
+                    print("%s:%d Relationship specified a non-existent identifier. src: %s; dest: %s" %
+                          (self.infile.name, self.reader.line_num - 1, row[self.start_id], row[self.end_id]))
                     if self.config.skip_invalid_edges is False:
                         raise e
                     continue
                 fmt = "=QQ" # 8-byte unsigned ints for src and dest
-                row_binary = struct.pack(fmt, src, dest) + self.pack_props(row)
+                try:
+                    row_binary = struct.pack(fmt, src, dest) + self.pack_props(row)
+                except SchemaError as e:
+                    raise SchemaError("%s:%d %s" % (self.infile.name, self.reader.line_num, str(e)))
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.

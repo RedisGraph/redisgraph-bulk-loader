@@ -63,7 +63,11 @@ class Label(EntityFile):
                         id_field = self.id_namespace + '.' + str(id_field)
                     self.update_node_dictionary(id_field)
 
-                row_binary = self.pack_props(row)
+                try:
+                    row_binary = self.pack_props(row)
+                except SchemaError as e:
+                    # TODO why is line_num off by one?
+                    raise SchemaError("%s:%d %s" % (self.infile.name, self.reader.line_num - 1, str(e)))
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
