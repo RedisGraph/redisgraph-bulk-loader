@@ -107,6 +107,7 @@ class BulkUpdate:
 @click.option('--host', '-h', default='127.0.0.1', help='Redis server host')
 @click.option('--port', '-p', default=6379, help='Redis server port')
 @click.option('--password', '-a', default=None, help='Redis server password')
+@click.option('--user', '-w', default=None, help='Username for Redis ACL')
 @click.option('--unix-socket-path', '-u', default=None, help='Redis server unix socket path')
 # Cypher query options
 @click.option('--query', '-q', help='Query to run on server')
@@ -117,7 +118,7 @@ class BulkUpdate:
 @click.option('--no-header', '-n', default=False, is_flag=True, help='If set, the CSV file has no header')
 # Buffer size restrictions
 @click.option('--max-token-size', '-t', default=500, help='Max size of each token in megabytes (default 500, max 512)')
-def bulk_update(graph, host, port, password, unix_socket_path, query, variable_name, csv, separator, no_header, max_token_size):
+def bulk_update(graph, host, port, password, user, unix_socket_path, query, variable_name, csv, separator, no_header, max_token_size):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk updater.")
 
@@ -126,9 +127,9 @@ def bulk_update(graph, host, port, password, unix_socket_path, query, variable_n
     # Attempt to connect to Redis server
     try:
         if unix_socket_path is not None:
-            client = redis.StrictRedis(unix_socket_path=unix_socket_path, password=password, decode_responses=True)
+            client = redis.StrictRedis(unix_socket_path=unix_socket_path, username=user, password=password, decode_responses=True)
         else:
-            client = redis.StrictRedis(host=host, port=port, password=password, decode_responses=True)
+            client = redis.StrictRedis(host=host, port=port, username=user, password=password, decode_responses=True)
     except redis.exceptions.ConnectionError as e:
         print("Could not connect to Redis server.")
         raise e
