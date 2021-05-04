@@ -50,6 +50,7 @@ def process_entities(entities):
 @click.option('--host', '-h', default='127.0.0.1', help='Redis server host')
 @click.option('--port', '-p', default=6379, help='Redis server port')
 @click.option('--password', '-a', default=None, help='Redis server password')
+@click.option('--user', '-w', default=None, help='Username for Redis ACL')
 @click.option('--unix-socket-path', '-u', default=None, help='Redis server unix socket path')
 # CSV file paths
 @click.option('--nodes', '-n', multiple=True, help='Path to node csv file')
@@ -69,7 +70,7 @@ def process_entities(entities):
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
-def bulk_insert(graph, host, port, password, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
+def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
     if sys.version_info[0] < 3:
         raise Exception("Python 3 is required for the RedisGraph bulk loader.")
 
@@ -87,9 +88,9 @@ def bulk_insert(graph, host, port, password, unix_socket_path, nodes, nodes_with
     # Attempt to connect to Redis server
     try:
         if unix_socket_path is not None:
-            client = redis.StrictRedis(unix_socket_path=unix_socket_path, password=password)
+            client = redis.StrictRedis(unix_socket_path=unix_socket_path, username=user, password=password)
         else:
-            client = redis.StrictRedis(host=host, port=port, password=password)
+            client = redis.StrictRedis(host=host, port=port, username=user, password=password)
     except redis.exceptions.ConnectionError as e:
         print("Could not connect to Redis server.")
         raise e
