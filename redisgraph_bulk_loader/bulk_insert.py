@@ -66,7 +66,7 @@ def process_entities(entities):
 @click.option('--escapechar', '-x', default='\\', help='the escape char used for the CSV reader (default \\). Use "none" for None.')
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
-@click.option('--max-buffer-size', '-b', default=2048, help='max buffer size in megabytes (default 2048)')
+@click.option('--max-buffer-size', '-b', default=512, help='max buffer size in megabytes (default 512)')
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
