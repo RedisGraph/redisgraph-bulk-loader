@@ -71,8 +71,8 @@ def process_entities(entities):
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
 def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
-    if sys.version_info[0] < 3:
-        raise Exception("Python 3 is required for the RedisGraph bulk loader.")
+    if sys.version_info.major < 3 or sys.version_info.minor < 6:
+        raise Exception("Python >= 3.6 is required for the RedisGraph bulk loader.")
 
     if not (any(nodes) or any(nodes_with_label)):
         raise Exception("At least one node file must be specified.")
