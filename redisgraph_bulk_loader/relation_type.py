@@ -74,7 +74,8 @@ class RelationType(EntityFile):
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
-                if self.binary_size + row_binary_len > self.config.max_token_size:
+                added_size = self.binary_size + row_binary_len
+                if added_size >= self.config.max_token_size or self.query_buffer.buffer_size + added_size >= self.config.max_buffer_size:
                     self.query_buffer.reltypes.append(self.to_binary())
                     self.query_buffer.send_buffer()
                     self.reset_partial_binary()
