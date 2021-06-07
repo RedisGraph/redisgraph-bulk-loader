@@ -90,7 +90,7 @@ The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typ
 - Property types do not need to be explicitly provided.
 - Properties are not required to be exclusively composed of any type.
 - The types currently supported by the bulk loader are:
-    - `boolean`: either `true` or `false` (case-insensitive, not quote-interpolated).
+    - `bool`: either `true` or `false` (case-insensitive, not quote-interpolated).
     - `integer`: an unquoted value that can be read as an integer type.
     - `double`: an unquoted value that can be read as a floating-point type.
     - `string`: any field that is either quote-interpolated or cannot be casted to a numeric or boolean type.
@@ -142,7 +142,7 @@ The accepted data types are:
 |        IGNORE        | This column will not be added to the graph                        |       Optional       |
 |    DOUBLE / FLOAT    | A signed 64-bit floating-point value                              |         Yes          |
 | INT / INTEGER / LONG | A signed 64-bit integer value                                     |         Yes          |
-|       BOOLEAN        | A boolean value indicated by the string 'true' or 'false'         |         Yes          |
+|         BOOL         | A boolean value indicated by the string 'true' or 'false'         |         Yes          |
 |        STRING        | A string value                                                    |         Yes          |
 |        ARRAY         | An array value                                                    |         Yes          |
 
