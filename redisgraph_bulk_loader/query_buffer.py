@@ -5,6 +5,7 @@ class QueryBuffer:
 
         # Redis client and data for each query
         self.client = client
+        self.pipe = client.pipeline(transaction=False)
         self.graphname = graphname
 
         # Create a node dictionary if we're building relations and as such require unique identifiers
@@ -43,10 +44,11 @@ class QueryBuffer:
             args.insert(0, "BEGIN")
             self.initial_query = False
 
-        result = self.client.execute_command("GRAPH.BULK", self.graphname, *args)
-        stats = result.split(', '.encode())
-        self.nodes_created += int(stats[0].split(' '.encode())[0])
-        self.relations_created += int(stats[1].split(' '.encode())[0])
+        self.pipe.execute_command("GRAPH.BULK", self.graphname, *args)
+        result = self.pipe.execute()
+
+        self.nodes_created += self.node_count
+        self.relations_created += self.relation_count
 
         self.clear_buffer()
 
