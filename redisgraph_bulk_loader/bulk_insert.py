@@ -1,7 +1,7 @@
 import os
 import sys
-import redis
-import click
+import aioredis
+import asyncclick as click
 from timeit import default_timer as timer
 
 sys.path.append(os.path.dirname(__file__))
@@ -26,15 +26,15 @@ def parse_schemas(cls, query_buf, path_to_csv, csv_tuples, config):
 
 # For each input file, validate contents and convert to binary format.
 # If any buffer limits have been reached, flush all enqueued inserts to Redis.
-def process_entities(entities):
+async def process_entities(entities):
     for entity in entities:
-        entity.process_entities()
+        await entity.process_entities()
         added_size = entity.binary_size
         # Check to see if the addition of this data will exceed the buffer's capacity
         if (entity.query_buffer.buffer_size + added_size >= entity.config.max_buffer_size
                 or entity.query_buffer.redis_token_count + len(entity.binary_entities) >= entity.config.max_token_count):
             # Send and flush the buffer if appropriate
-            entity.query_buffer.send_buffer()
+            await entity.query_buffer.send_buffer()
         # Add binary data to list and update all counts
         entity.query_buffer.redis_token_count += len(entity.binary_entities)
         entity.query_buffer.buffer_size += added_size
@@ -70,7 +70,8 @@ def process_entities(entities):
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
-def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
+@click.option('--async-requests', '-A', default=3, help='amount of async requests to be executed in parallel' )
+async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index, async_requests):
     if sys.version_info.major < 3 or sys.version_info.minor < 6:
         raise Exception("Python >= 3.6 is required for the RedisGraph bulk loader.")
 
@@ -88,40 +89,40 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, node
     # Attempt to connect to Redis server
     try:
         if unix_socket_path is not None:
-            client = redis.StrictRedis(unix_socket_path=unix_socket_path, username=user, password=password)
+            client = await aioredis.from_url(f"unix://{unix_socket_path}", username=user, password=password)
         else:
-            client = redis.StrictRedis(host=host, port=port, username=user, password=password)
-    except redis.exceptions.ConnectionError as e:
-        print("Could not connect to Redis server.")
+            client = await aioredis.from_url(f"redis://{host}:{port}", username=user, password=password)
+    except aioredis.exceptions.ConnectionError as e:
+        print("Could not connect to Redis ser`ver.")
         raise e
 
     # Attempt to verify that RedisGraph module is loaded
     try:
-        module_list = client.execute_command("MODULE LIST")
+        module_list = await client.execute_command("MODULE", "LIST")
         if not any(b'graph' in module_description for module_description in module_list):
             print("RedisGraph module not loaded on connected server.")
             sys.exit(1)
-    except redis.exceptions.ResponseError:
+    except aioredis.exceptions.ResponseError:
         # Ignore check if the connected server does not support the "MODULE LIST" command
         pass
 
     # Verify that the graph name is not already used in the Redis database
-    key_exists = client.execute_command("EXISTS", graph)
+    key_exists = await client.execute_command("EXISTS", graph)
     if key_exists:
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    query_buf = QueryBuffer(graph, client, config)
+    query_buf = QueryBuffer(graph, client, config, async_requests)
 
     # Read the header rows of each input CSV and save its schema.
     labels = parse_schemas(Label, query_buf, nodes, nodes_with_label, config)
     reltypes = parse_schemas(RelationType, query_buf, relations, relations_with_type, config)
 
-    process_entities(labels)
-    process_entities(reltypes)
+    await process_entities(labels)
+    await process_entities(reltypes)
 
     # Send all remaining tokens to Redis
-    query_buf.send_buffer()
+    await query_buf.flush()
 
     end_time = timer()
     query_buf.report_completion(end_time - start_time)
@@ -131,7 +132,7 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, node
         l, p = i.split(":")
         print("Creating Index on Label: %s, Property: %s" % (l, p))
         try:
-            index_create = client.execute_command("GRAPH.QUERY", graph, "CREATE INDEX ON :%s(%s)" % (l, p))
+            index_create = await client.execute_command("GRAPH.QUERY", graph, "CREATE INDEX ON :%s(%s)" % (l, p))
             for z in index_create:
                 print(z[0].decode("utf-8"))
         except redis.exceptions.ResponseError as e:
@@ -143,7 +144,7 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, node
         l, p = i.split(":")
         print("Creating Full Text Search Index on Label: %s, Property: %s" % (l, p))
         try:
-            index_create = client.execute_command("GRAPH.QUERY", graph, "CALL db.idx.fulltext.createNodeIndex('%s', '%s')" % (l, p))
+            index_create = await client.execute_command("GRAPH.QUERY", graph, "CALL db.idx.fulltext.createNodeIndex('%s', '%s')" % (l, p))
             print(index_create[-1][0].decode("utf-8"))
         except redis.exceptions.ResponseError as e:
             print("Unable to create Full Text Search Index on Label: %s, Property %s" % (l, p))

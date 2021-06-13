@@ -1,6 +1,6 @@
 import re
 import sys
-import click
+import asyncclick as click
 from entity_file import Type, EntityFile
 from exceptions import SchemaError
 
@@ -50,7 +50,7 @@ class Label(EntityFile):
         self.query_buffer.nodes[identifier] = self.query_buffer.top_node_id
         self.query_buffer.top_node_id += 1
 
-    def process_entities(self):
+    async def process_entities(self):
         entities_created = 0
         with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str) as reader:
             for row in reader:
@@ -75,7 +75,7 @@ class Label(EntityFile):
                 added_size = self.binary_size + row_binary_len
                 if added_size >= self.config.max_token_size or self.query_buffer.buffer_size + added_size >= self.config.max_buffer_size:
                     self.query_buffer.labels.append(self.to_binary())
-                    self.query_buffer.send_buffer()
+                    await self.query_buffer.send_buffer()
                     self.reset_partial_binary()
                     # Push the label onto the query buffer again, as there are more entities to process.
                     self.query_buffer.labels.append(self.to_binary())

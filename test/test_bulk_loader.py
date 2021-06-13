@@ -6,7 +6,7 @@ import csv
 import redis
 import unittest
 from redisgraph import Graph
-from click.testing import CliRunner
+from asyncclick.testing import CliRunner
 from redisgraph_bulk_loader.bulk_insert import bulk_insert
 
 # Globals for validating example graph
@@ -27,7 +27,7 @@ def row_count(in_csv):
     return idx
 
 
-class TestBulkLoader(unittest.TestCase):
+class TestBulkLoader(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         """
@@ -48,8 +48,8 @@ class TestBulkLoader(unittest.TestCase):
     def validate_exception(self, res, expected_msg):
         self.assertNotEqual(res.exit_code, 0)
         self.assertIn(expected_msg, str(res.exception))
-
-    def test01_social_graph(self):
+    
+    async def test01_social_graph(self):
         """Build the graph in 'example' and validate the created graph."""
         global person_count
         global country_count
@@ -71,7 +71,7 @@ class TestBulkLoader(unittest.TestCase):
         knows_count = str(row_count(knows_file))
         visited_count = str(row_count(visited_file))
 
-        res = runner.invoke(bulk_insert, ['--nodes', person_file,
+        res = await runner.invoke(bulk_insert, ['--nodes', person_file,
                                           '--nodes', country_file,
                                           '--relations', knows_file,
                                           '--relations', visited_file,
@@ -181,7 +181,7 @@ class TestBulkLoader(unittest.TestCase):
                            ['Valerie Abigail Arad', 'pleasure', 'Russia']]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test02_private_identifiers(self):
+    async def test02_private_identifiers(self):
         """Validate that private identifiers are not added to the graph."""
         graphname = "tmpgraph1"
         # Write temporary files
@@ -198,7 +198,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([5, 3])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
                                           graphname], catch_exceptions=False)
 
@@ -214,7 +214,7 @@ class TestBulkLoader(unittest.TestCase):
         for propname in query_result.header:
             self.assertNotIn('_identifier', propname)
 
-    def test03_reused_identifier(self):
+    async def test03_reused_identifier(self):
         """Expect failure on reused identifiers."""
         graphname = "tmpgraph2"
         # Write temporary files
@@ -230,7 +230,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([0, 3])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
                                           graphname], catch_exceptions=False)
 
@@ -240,14 +240,14 @@ class TestBulkLoader(unittest.TestCase):
 
         # Run the script again without creating relations
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           graphname], catch_exceptions=False)
 
         # The script should succeed and create 3 nodes
         self.assertEqual(res.exit_code, 0)
         self.assertIn('3 nodes created', res.output)
 
-    def test04_batched_build(self):
+    async def test04_batched_build(self):
         """
         Create a graph using many batches.
         Reuses the inputs of test01_social_graph
@@ -262,7 +262,7 @@ class TestBulkLoader(unittest.TestCase):
         visited_file = csv_path + 'VISITED.csv'
         csv_path = os.path.dirname(os.path.abspath(__file__)) + '/../../demo/bulk_insert/resources/'
         # Build the social graph again with a max token count of 1.
-        res = runner.invoke(bulk_insert, ['--nodes', person_file,
+        res = await runner.invoke(bulk_insert, ['--nodes', person_file,
                                           '--nodes', country_file,
                                           '--relations', knows_file,
                                           '--relations', visited_file,
@@ -292,7 +292,7 @@ class TestBulkLoader(unittest.TestCase):
         new_result = new_graph.query('MATCH (a)-[e:KNOWS]->(b) RETURN a.name, e, b.name ORDER BY e.relation, a.name')
         self.assertEqual(original_result.result_set, new_result.result_set)
 
-    def test05_script_failures(self):
+    async def test05_script_failures(self):
         """Validate that the bulk loader fails gracefully on invalid inputs and arguments"""
 
         graphname = "tmpgraph3"
@@ -303,7 +303,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([0]) # Wrong number of properites
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           graphname])
 
         # The script should fail because a row has the wrong number of fields
@@ -321,7 +321,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([0])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
                                           graphname])
 
@@ -334,14 +334,14 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([0, "fakeidentifier"])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
                                           graphname])
 
         # The script should fail because an invalid node identifier was used
         self.validate_exception(res, "fakeidentifier")
 
-    def test06_property_types(self):
+    async def test06_property_types(self):
         """Verify that numeric, boolean, and string types are properly handled"""
 
         graphname = "tmpgraph4"
@@ -360,7 +360,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([7, 0.2, 'edge_prop'])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--relations', '/tmp/relations.tmp',
                                           graphname], catch_exceptions=False)
 
@@ -377,7 +377,7 @@ class TestBulkLoader(unittest.TestCase):
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test07_utf8(self):
+    async def test07_utf8(self):
         """Verify that numeric, boolean, and null types are properly handled"""
         graphname = "tmpgraph5"
         # Write temporary files
@@ -395,7 +395,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([8, '美國人'])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           graphname], catch_exceptions=False)
 
         assert res.exit_code == 0
@@ -417,7 +417,7 @@ class TestBulkLoader(unittest.TestCase):
         for i, j in zip(query_result.result_set, expected_strs):
             self.assertEqual(repr(i), repr(j))
 
-    def test08_nonstandard_separators(self):
+    async def test08_nonstandard_separators(self):
         """Validate use of non-comma delimiters in input files."""
 
         graphname = "tmpgraph6"
@@ -432,7 +432,7 @@ class TestBulkLoader(unittest.TestCase):
                 out.writerow(row)
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--separator', '|',
                                           graphname], catch_exceptions=False)
 
@@ -447,7 +447,7 @@ class TestBulkLoader(unittest.TestCase):
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test09_schema(self):
+    async def test09_schema(self):
         """Validate that the enforce-schema argument is respected"""
 
         graphname = "tmpgraph7"
@@ -458,7 +458,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([1, 1])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--enforce-schema',
                                           graphname], catch_exceptions=False)
 
@@ -473,7 +473,7 @@ class TestBulkLoader(unittest.TestCase):
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test10_invalid_schema(self):
+    async def test10_invalid_schema(self):
         """Validate that errors are emitted properly with an invalid CSV schema."""
 
         graphname = "expect_fail"
@@ -487,14 +487,14 @@ class TestBulkLoader(unittest.TestCase):
 
         runner = CliRunner()
         # Try to parse all cells as integers
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--enforce-schema',
                                           graphname])
 
         # Expect an error.
         self.validate_exception(res, "Could not parse")
 
-    def test11_schema_ignore_columns(self):
+    async def test11_schema_ignore_columns(self):
         """Validate that columns with the type IGNORE are not inserted."""
 
         graphname = "ignore_graph"
@@ -505,7 +505,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow(['str2', 1])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--enforce-schema',
                                           graphname], catch_exceptions=False)
 
@@ -521,7 +521,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
 
-    def test12_no_null_values(self):
+    async def test12_no_null_values(self):
         """Validate that NULL inputs are not inserted."""
 
         graphname = "null_graph"
@@ -532,7 +532,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow(['str2', None])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           graphname], catch_exceptions=False)
 
         self.assertEqual(res.exit_code, 0)
@@ -547,7 +547,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
 
-    def test13_id_namespaces(self):
+    async def test13_id_namespaces(self):
         """Validate that ID namespaces allow for scoped identifiers."""
 
         graphname = "namespace_graph"
@@ -570,7 +570,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow([1, 1])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'User', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes-with-label', 'User', '/tmp/nodes.tmp',
                                           '--nodes-with-label', 'Post', '/tmp/nodes2.tmp',
                                           '--relations-with-type', 'AUTHOR', '/tmp/relations.tmp',
                                           '--enforce-schema',
@@ -587,7 +587,7 @@ class TestBulkLoader(unittest.TestCase):
                            ['1', 'Filipe', 'User', '1', 40, 'Post']]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test14_array_properties_inferred(self):
+    async def test14_array_properties_inferred(self):
         """Validate that array properties are correctly inserted."""
 
         graphname = "arr_graph"
@@ -598,7 +598,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow(['str2', """['prop1', ['nested_1', 'nested_2'], 5]"""])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--separator', '|',
                                           graphname], catch_exceptions=False)
 
@@ -613,7 +613,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
 
-    def test15_array_properties_schema_enforced(self):
+    async def test15_array_properties_schema_enforced(self):
         """Validate that array properties are correctly inserted with an enforced schema."""
 
         graphname = "arr_graph_with_schema"
@@ -624,7 +624,7 @@ class TestBulkLoader(unittest.TestCase):
             out.writerow(['str2', """['prop1', ['nested_1', 'nested_2'], 5]"""])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                           '--separator', '|',
                                           '--enforce-schema',
                                           graphname], catch_exceptions=False)
@@ -640,7 +640,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(query_result.result_set[0][0].properties, node_1)
         self.assertEqual(query_result.result_set[1][0].properties, node_2)
 
-    def test16_error_on_schema_failure(self):
+    async def test16_error_on_schema_failure(self):
         """Validate that the loader errors on processing non-conformant CSVs with an enforced schema."""
 
         graphname = "schema_error"
@@ -652,7 +652,7 @@ class TestBulkLoader(unittest.TestCase):
 
         try:
             runner = CliRunner()
-            runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
+            await runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
                                         '--separator', '|',
                                         '--enforce-schema',
                                         graphname], catch_exceptions=False)
@@ -662,7 +662,7 @@ class TestBulkLoader(unittest.TestCase):
             self.assertEqual(sys.exc_info()[0].__name__, 'SchemaError')
             self.assertIn("Could not parse 'strval' as an array", str(e))
 
-    def test17_ensure_index_is_created(self):
+    async def test17_ensure_index_is_created(self):
         graphname = "index_test"
         with open('/tmp/nodes_index.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file, delimiter='|')
@@ -672,7 +672,7 @@ class TestBulkLoader(unittest.TestCase):
         csv_file.close()
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'Person', '/tmp/nodes_index.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes-with-label', 'Person', '/tmp/nodes_index.tmp',
                                           '--separator', '|',
                                           '--index', 'Person:age',
                                           '--enforce-schema',
@@ -686,7 +686,7 @@ class TestBulkLoader(unittest.TestCase):
         res = r.execute_command("GRAPH.EXPLAIN", graphname, 'MATCH (p:Person) WHERE p.age > 16 RETURN p')
         self.assertIn('        Index Scan | (p:Person)', res)
 
-    def test18_ensure_full_text_index_is_created(self):
+    async def test18_ensure_full_text_index_is_created(self):
         graphname = "index_full_text_test"
         with open('/tmp/nodes_full_text_index.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file, delimiter='|')
@@ -698,7 +698,7 @@ class TestBulkLoader(unittest.TestCase):
         csv_file.close()
 
         runner = CliRunner()
-        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'Monkeys', '/tmp/nodes_full_text_index.tmp',
+        res = await runner.invoke(bulk_insert, ['--nodes-with-label', 'Monkeys', '/tmp/nodes_full_text_index.tmp',
                                           '--full-text-index', 'Monkeys:name',
                                           '--enforce-schema',
                                           graphname], catch_exceptions=False)

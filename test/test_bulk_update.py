@@ -5,11 +5,11 @@ import csv
 import redis
 import unittest
 from redisgraph import Graph
-from click.testing import CliRunner
+from asyncclick.testing import CliRunner
 from redisgraph_bulk_loader.bulk_update import bulk_update
 
 
-class TestBulkUpdate(unittest.TestCase):
+class TestBulkUpdate(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         """
@@ -24,7 +24,7 @@ class TestBulkUpdate(unittest.TestCase):
         os.remove('/tmp/csv.tmp')
         cls.redis_con.flushall()
 
-    def test01_simple_updates(self):
+    async def test01_simple_updates(self):
         """Validate that bulk updates work on an empty graph."""
         graphname = "tmpgraph1"
         # Write temporary files
@@ -36,7 +36,7 @@ class TestBulkUpdate(unittest.TestCase):
             out.writerow([3, "c"])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'CREATE (:L {id: row[0], name: row[1]})',
                                           graphname], catch_exceptions=False)
 
@@ -55,7 +55,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertEqual(query_result.result_set, expected_result)
 
         # Attempt to re-insert the entities using MERGE.
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'MERGE (:L {id: row[0], name: row[1]})',
                                           graphname], catch_exceptions=False)
 
@@ -65,7 +65,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertNotIn('Nodes created', res.output)
         self.assertNotIn('Properties set', res.output)
 
-    def test02_traversal_updates(self):
+    async def test02_traversal_updates(self):
         """Validate that bulk updates can create edges and perform traversals."""
         graphname = "tmpgraph1"
         # Write temporary files
@@ -79,7 +79,7 @@ class TestBulkUpdate(unittest.TestCase):
         # Create a graph of the form:
         # (a)-->(b)-->(c), (a)-->(c)
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'MATCH (src {id: row[0]}) CREATE (src)-[:R]->(dest:L {id: row[1], name: row[2]})',
                                           graphname], catch_exceptions=False)
 
@@ -97,7 +97,7 @@ class TestBulkUpdate(unittest.TestCase):
                            ["c", "c2"]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test03_datatypes(self):
+    async def test03_datatypes(self):
         """Validate that all RedisGraph datatypes are supported by the bulk updater."""
         graphname = "tmpgraph2"
         # Write temporary files
@@ -106,7 +106,7 @@ class TestBulkUpdate(unittest.TestCase):
             out.writerow([0, 1.5, "true", "string", "[1, 'nested_str']"])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'CREATE (a:L) SET a.intval = row[0], a.doubleval = row[1], a.boolval = row[2], a.stringval = row[3], a.arrayval = row[4]',
                                           '--no-header',
                                           graphname], catch_exceptions=False)
@@ -122,7 +122,7 @@ class TestBulkUpdate(unittest.TestCase):
         expected_result = [[0, 1.5, True, "string", "[1,'nested_str']"]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test04_custom_delimiter(self):
+    async def test04_custom_delimiter(self):
         """Validate that non-comma delimiters produce the correct results."""
         graphname = "tmpgraph3"
         # Write temporary files
@@ -134,7 +134,7 @@ class TestBulkUpdate(unittest.TestCase):
             out.writerow([3, "c"])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'CREATE (:L {id: row[0], name: row[1]})',
                                           '--separator', '|',
                                           graphname], catch_exceptions=False)
@@ -154,7 +154,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertEqual(query_result.result_set, expected_result)
 
         # Attempt to re-insert the entities using MERGE.
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'MERGE (:L {id: row[0], name: row[1]})',
                                           '--separator', '|',
                                           graphname], catch_exceptions=False)
@@ -165,7 +165,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertNotIn('Nodes created', res.output)
         self.assertNotIn('Properties set', res.output)
 
-    def test05_custom_variable_name(self):
+    async def test05_custom_variable_name(self):
         """Validate that the user can specify the name of the 'row' query variable."""
         graphname = "variable_name"
         runner = CliRunner()
@@ -173,7 +173,7 @@ class TestBulkUpdate(unittest.TestCase):
         csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../example/')
         person_file = os.path.join(csv_path, 'Person.csv')
         # Build the social graph again with a max token count of 1.
-        res = runner.invoke(bulk_update, ['--csv', person_file,
+        res = await runner.invoke(bulk_update, ['--csv', person_file,
                                           '--query', 'CREATE (p:Person) SET p.name = line[0], p.age = line[1], p.gender = line[2], p.status = line[3]',
                                           '--variable-name', 'line',
                                           graphname], catch_exceptions=False)
@@ -203,7 +203,7 @@ class TestBulkUpdate(unittest.TestCase):
                            ['Valerie Abigail Arad', 31, 'female', 'married']]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test06_no_header(self):
+    async def test06_no_header(self):
         """Validate that the '--no-header' option works properly."""
         graphname = "tmpgraph4"
         # Write temporary files
@@ -214,7 +214,7 @@ class TestBulkUpdate(unittest.TestCase):
             out.writerow([3, "c"])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'CREATE (:L {id: row[0], name: row[1]})',
                                           '--no-header',
                                           graphname], catch_exceptions=False)
@@ -233,7 +233,7 @@ class TestBulkUpdate(unittest.TestCase):
                            [5, "b"]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test07_batched_update(self):
+    async def test07_batched_update(self):
         """Validate that updates performed over multiple batches produce the correct results."""
         graphname = "batched_update"
 
@@ -245,7 +245,7 @@ class TestBulkUpdate(unittest.TestCase):
                 out.writerow([prop_str])
 
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'CREATE (:L {prop: row[0]})',
                                           '--no-header',
                                           '--max-token-size', 1,
@@ -263,7 +263,7 @@ class TestBulkUpdate(unittest.TestCase):
         expected_result = [[prop_str]]
         self.assertEqual(query_result.result_set, expected_result)
 
-    def test08_runtime_error(self):
+    async def test08_runtime_error(self):
         """Validate that run-time errors are captured by the bulk updater."""
         graphname = "tmpgraph5"
 
@@ -272,7 +272,7 @@ class TestBulkUpdate(unittest.TestCase):
             out = csv.writer(csv_file)
             out.writerow(["a"])
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'MERGE (:L {val: NULL})',
                                           '--no-header',
                                           graphname])
@@ -280,11 +280,11 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertNotEqual(res.exit_code, 0)
         self.assertIn("Cannot merge node", str(res.exception))
 
-    def test09_compile_time_error(self):
+    async def test09_compile_time_error(self):
         """Validate that malformed queries trigger an early exit from the bulk updater."""
         graphname = "tmpgraph5"
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/csv.tmp',
                                           '--query', 'CREATE (:L {val: row[0], val2: undefined_identifier})',
                                           '--no-header',
                                           graphname])
@@ -292,13 +292,13 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertNotEqual(res.exit_code, 0)
         self.assertIn("undefined_identifier not defined", str(res.exception))
 
-    def test10_invalid_inputs(self):
+    async def test10_invalid_inputs(self):
         """Validate that the bulk updater handles invalid inputs incorrectly."""
         graphname = "tmpgraph6"
 
         # Attempt to insert a non-existent CSV file.
         runner = CliRunner()
-        res = runner.invoke(bulk_update, ['--csv', '/tmp/fake_file.csv',
+        res = await runner.invoke(bulk_update, ['--csv', '/tmp/fake_file.csv',
                                           '--query', 'MERGE (:L {val: NULL})',
                                           graphname])
 
