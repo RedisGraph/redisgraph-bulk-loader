@@ -93,7 +93,7 @@ async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes
         else:
             client = await aioredis.from_url(f"redis://{host}:{port}", username=user, password=password)
     except aioredis.exceptions.ConnectionError as e:
-        print("Could not connect to Redis ser`ver.")
+        print("Could not connect to Redis server.")
         raise e
 
     # Attempt to verify that RedisGraph module is loaded
