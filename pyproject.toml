@@ -6,10 +6,6 @@ authors = ["RedisLabs <oss@redislabs.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
 
-#[tool.poetry.scripts]
-#redisgraph-bulk-loader = 'redisgraph_bulk_loader.bulk_insert:bulk_insert'
-#redisgraph-bulk-update = 'redisgraph_bulk_loader.bulk_update:bulk_update'
-
 classifiers = [
     'Topic :: Database',
     'Programming Language :: Python',
@@ -22,6 +18,9 @@ classifiers = [
 ]
 keywords = ["Redis Graph Extension"]
 
+[tool.poetry.scripts]
+redisgraph-bulk-update = "redisgraph_bulk_loader.bulk_update:bulk_update"
+redisgraph-bulk-insert = "redisgraph_bulk_loader.bulk_insert:bulk_insert"
 
 [tool.poetry.urls]
 url = "https://redisgraph.io"
