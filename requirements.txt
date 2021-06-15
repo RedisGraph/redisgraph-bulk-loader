@@ -1,6 +1,0 @@
-asyncclick
-click
-anyio
-aioredis==2.0.0a1
-redis>=3.5.3
-redisgraph
