@@ -70,13 +70,15 @@ async def process_entities(entities):
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
-@click.option('--async-requests', '-A', default=3, help='amount of async requests to be executed in parallel' )
+@click.option('--async-requests', '-A', default=3, help='number of async requests to be executed in parallel' )
 async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index, async_requests):
-    if sys.version_info.major < 3 or sys.version_info.minor < 6:
-        raise Exception("Python >= 3.6 is required for the RedisGraph bulk loader.")
+    if sys.version_info.major < 3 or sys.version_info.minor < 8:
+        raise Exception("Python >= 3.8 is required for the RedisGraph bulk loader.")
 
     if not (any(nodes) or any(nodes_with_label)):
         raise Exception("At least one node file must be specified.")
+    if async_requests <= 0:
+        raise Exception("The number of async requests must be greater than zero")
 
     start_time = timer()
 
@@ -84,7 +86,7 @@ async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes
     store_node_identifiers = any(relations) or any(relations_with_type)
 
     # Initialize configurations with command-line arguments
-    config = Config(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote), store_node_identifiers, escapechar)
+    config = Config(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote), store_node_identifiers, escapechar, async_requests)
 
     # Attempt to connect to Redis server
     try:
@@ -112,7 +114,7 @@ async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes
         print("Graph with name '%s', could not be created, as Redis key '%s' already exists." % (graph, graph))
         sys.exit(1)
 
-    query_buf = QueryBuffer(graph, client, config, async_requests)
+    query_buf = QueryBuffer(graph, client, config)
 
     # Read the header rows of each input CSV and save its schema.
     labels = parse_schemas(Label, query_buf, nodes, nodes_with_label, config)

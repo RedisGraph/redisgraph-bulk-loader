@@ -1,5 +1,5 @@
 class Config:
-    def __init__(self, max_token_count=1024 * 1023, max_buffer_size=2_048, max_token_size=512, enforce_schema=False, skip_invalid_nodes=False, skip_invalid_edges=False, separator=',', quoting=3, store_node_identifiers=False, escapechar='\\'):
+    def __init__(self, max_token_count=1024 * 1023, max_buffer_size=2_048, max_token_size=512, enforce_schema=False, skip_invalid_nodes=False, skip_invalid_edges=False, separator=',', quoting=3, store_node_identifiers=False, escapechar='\\', async_requests =3 ):
         """Settings for this run of the bulk loader"""
         # Maximum number of tokens per query
         # 1024 * 1024 is the hard-coded Redis maximum. We'll set a slightly lower limit so
@@ -18,6 +18,7 @@ class Config:
         self.separator = separator
         self.quoting = quoting
         self.escapechar = None if escapechar.lower() == "none" else escapechar
+        self.async_requests = async_requests
 
         # True if we are building relations as well as nodes
         self.store_node_identifiers = store_node_identifiers

@@ -29,16 +29,16 @@ class InternalBuffer:
         return self.client.execute_command("GRAPH.BULK", self.graphname, *args)
 
 class QueryBuffer:
-    def __init__(self, graphname, client, config, async_requests):
+    def __init__(self, graphname, client, config):
 
         self.client = client
         self.graphname = graphname
         self.config = config
-        self.async_requests = async_requests
+        self.async_requests = config.async_requests
 
         # A queue of internal buffers
         self.internal_buffers = list()
-        for i in range(async_requests):
+        for i in range(self.async_requests):
             self.internal_buffers.append(InternalBuffer(graphname, client))
         # Each buffer sent to RedisGraph returns awaitable
         self.awaitables = set()
@@ -60,9 +60,9 @@ class QueryBuffer:
     async def send_buffer(self, flush=False):
         # If flush is needed all of the awaitables need to be complete, otherwise at least one is needed.
         return_when_flag = asyncio.ALL_COMPLETED if flush is True else asyncio.FIRST_COMPLETED
-        awaitable = self.current_buffer.send_buffer(self.initial_query)
-        if awaitable is not None:
-            self.awaitables.add(awaitable)
+        coro = self.current_buffer.send_buffer(self.initial_query)
+        if coro is not None:
+            self.awaitables.add(asyncio.create_task(coro))
         # Requests are flushed and awaited when:
         # 1. Flush is needed.
         # 2. Initial query with BEGIN token, to avoid race condition on async RedisGraph servers.
