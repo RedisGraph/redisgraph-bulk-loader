@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import aioredis
 import asyncclick as click
 from timeit import default_timer as timer
@@ -70,7 +71,7 @@ async def process_entities(entities):
 @click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
-@click.option('--async-requests', '-A', default=3, help='number of async requests to be executed in parallel' )
+@click.option('--async-requests', '-j', default=3, help='number of async requests to be executed in parallel')
 async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index, async_requests):
     if sys.version_info.major < 3 or sys.version_info.minor < 8:
         raise Exception("Python >= 3.8 is required for the RedisGraph bulk loader.")
@@ -156,4 +157,4 @@ async def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes
 
 
 if __name__ == '__main__':
-    bulk_insert()
+    asyncio.run(bulk_insert())
