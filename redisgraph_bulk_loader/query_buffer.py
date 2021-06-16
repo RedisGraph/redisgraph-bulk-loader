@@ -67,7 +67,7 @@ class QueryBuffer:
         # 1. Flush is needed.
         # 2. Initial query with BEGIN token, to avoid race condition on async RedisGraph servers.
         # 3. The amount of async requests has reached the limit.
-        if(len(self.awaitables) == self.async_requests or self.initial_query is True or flush == True):
+        if(len(self.awaitables) == self.async_requests or self.initial_query is True or (flush == True and len(self.awaitables) > 0)):
             done, pending = await asyncio.wait(self.awaitables, return_when = return_when_flag)
             for d in done:
                 result = d.result()
@@ -79,8 +79,8 @@ class QueryBuffer:
             # Store the pending tasks.
             self.awaitables = pending
             self.initial_query = False
-        # Pop a new buffer.
-        self.current_buffer = self.internal_buffers.pop(0)
+            # Pop a new buffer.
+            self.current_buffer = self.internal_buffers.pop(0)
 
     async def flush(self):
         await self.send_buffer(flush=True)
