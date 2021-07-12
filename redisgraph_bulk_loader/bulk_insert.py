@@ -66,8 +66,8 @@ def process_entities(entities):
 @click.option('--escapechar', '-x', default='\\', help='the escape char used for the CSV reader (default \\). Use "none" for None.')
 # Buffer size restrictions
 @click.option('--max-token-count', '-c', default=1024, help='max number of processed CSVs to send per query (default 1024)')
-@click.option('--max-buffer-size', '-b', default=512, help='max buffer size in megabytes (default 512)')
-@click.option('--max-token-size', '-t', default=500, help='max size of each token in megabytes (default 500, max 512)')
+@click.option('--max-buffer-size', '-b', default=128, help='max buffer size in megabytes (default 128, max 1024)')
+@click.option('--max-token-size', '-t', default=128, help='max size of each token in megabytes (default 128, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
 def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
