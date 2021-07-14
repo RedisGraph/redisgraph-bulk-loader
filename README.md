@@ -53,8 +53,8 @@ python3 redisgraph_bulk_loader/bulk_insert.py GRAPHNAME [OPTIONS]
 |  -e   | --skip-invalid-edges       |            Skip edges that use invalid IDs for endpoints instead of exiting with an error            |
 |  -q   | --quote INT                | The quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3 |
 |  -t   | --max-token-count INT      |            (Debug argument) Max number of tokens sent in each Redis query (default 1024)             |
-|  -b   | --max-buffer-size INT      |               (Debug argument) Max batch size (MBs) of each Redis query (default 4096)               |
-|  -c   | --max-token-size INT       |              (Debug argument) Max size (MBs) of each token sent to Redis (default 500)               |
+|  -b   | --max-buffer-size INT      |                (Debug argument) Max batch size (MBs) of each Redis query (default 64)                |
+|  -c   | --max-token-size INT       |               (Debug argument) Max size (MBs) of each token sent to Redis (default 64)               |
 |  -i   | --index Label:Property     |              After bulk import, create an Index on provided Label:Property pair (optional)           |
 |  -f   | --full-text-index Label:Property     |              After bulk import, create an full text index on provided Label:Property pair (optional)           |
 
@@ -70,7 +70,7 @@ The label (for nodes) or relationship type (for relationships) is derived from t
 RedisGraph does not impose a schema on properties, so the same property key can have values of differing types, such as strings and integers. As such, the bulk loader's default behaviour is to infer the type for each field independently for each value. This can cause unexpected behaviors when, for example, a property expected to always have string values has a field that can be cast to an integer or double. To avoid this, use the `--enforce-schema` flag and update your CSV headers as described in [Input Schemas](#input-schemas).
 
 ### Extended parameter descriptions
-The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typically not required. They should only be specified if the memory overhead of graph creation is too high. The bulk loader builds large graphs by sending binary tokens (each of which holds multiple nodes or relations) to Redis in batches. By lowering these limits from their defaults, the size of each transmission to Redis is lowered and fewer entities are held in memory, at the expense of a longer overall runtime.
+The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typically not required. They should only be specified if the memory overhead of graph creation is too high, or raised if the volume of Redis calls is too high. The bulk loader builds large graphs by sending binary tokens (each of which holds multiple nodes or relations) to Redis in batches.
 
 `--quote` is maintained for backwards compatibility, and allows some control over Python's type inference in the default mode. `--enforce-schema-type` is preferred.
 
