@@ -1,5 +1,5 @@
 class Config:
-    def __init__(self, max_token_count=1024 * 1023, max_buffer_size=128, max_token_size=128, enforce_schema=False, skip_invalid_nodes=False, skip_invalid_edges=False, separator=',', quoting=3, store_node_identifiers=False, escapechar='\\'):
+    def __init__(self, max_token_count=1024 * 1023, max_buffer_size=64, max_token_size=64, enforce_schema=False, skip_invalid_nodes=False, skip_invalid_edges=False, separator=',', quoting=3, store_node_identifiers=False, escapechar='\\'):
         """Settings for this run of the bulk loader"""
         # Maximum number of tokens per query
         # 1024 * 1024 is the hard-coded Redis maximum. We'll set a slightly lower limit so

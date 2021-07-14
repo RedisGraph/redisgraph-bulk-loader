@@ -7,8 +7,8 @@ class TestBulkLoader(unittest.TestCase):
         """Verify the default values in the Config class."""
         config = Config()
         self.assertEqual(config.max_token_count, 1024 * 1023)
-        self.assertEqual(config.max_buffer_size, 128_000_000)
-        self.assertEqual(config.max_token_size, 128_000_000)
+        self.assertEqual(config.max_buffer_size, 64_000_000)
+        self.assertEqual(config.max_token_size, 64_000_000)
         self.assertEqual(config.enforce_schema, False)
         self.assertEqual(config.skip_invalid_nodes, False)
         self.assertEqual(config.skip_invalid_edges, False)
