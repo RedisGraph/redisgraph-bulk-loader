@@ -27,9 +27,9 @@ pip install git+https://github.com/RedisGraph/redisgraph-bulk-loader.git@master
 ```
 
 ## Usage
-Pip installation exposes `redisgraph-bulk-loader` as a command to invoke this tool:
+Pip installation exposes `redisgraph-bulk-insert` as a command to invoke this tool:
 ```
-redisgraph-bulk-loader GRAPHNAME [OPTIONS]
+redisgraph-bulk-insert GRAPHNAME [OPTIONS]
 ```
 
 Installation by cloning the repository allows the script to be invoked via Python like so:
@@ -63,7 +63,7 @@ The only required arguments are the name to give the newly-created graph (which 
 The nodes and relationship flags should be specified once per input file.
 
 ```
-redisgraph-bulk-loader GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
+redisgraph-bulk-insert GRAPH_DEMO -n example/Person.csv -n example/Country.csv -r example/KNOWS.csv -r example/VISITED.csv
 ```
 The label (for nodes) or relationship type (for relationships) is derived from the base name of the input CSV file. In this example, we'll construct two sets of nodes, labeled `Person` and `Country`, and two types of relationships - `KNOWS` and `VISITED`.
 
@@ -120,7 +120,7 @@ storeNum | Location | daysOpen |
 136 | 55 Elm St | ['Sat', 'Sun']
 ```
 This CSV would be inserted with the command:
-`redisgraph-bulk-loader StoreGraph --separator \| --nodes Store.csv`
+`redisgraph-bulk-insert StoreGraph --separator \| --nodes Store.csv`
 
 (Since the pipe character has meaning in the terminal, it must be backslash-escaped.)
 
@@ -168,7 +168,7 @@ FOLLOWS.csv
 1, 0, 10
 ```
 Inserting these CSVs with the command:
-`redisgraph-bulk-loader SocialGraph --enforce-schema --nodes User.csv --relations FOLLOWS.csv`
+`redisgraph-bulk-insert SocialGraph --enforce-schema --nodes User.csv --relations FOLLOWS.csv`
 
 Will produce a graph named SocialGraph with 2 users, Jeffrey and Filipe. Jeffrey follows Filipe, and that relation has a reaction_count of 25. Filipe also follows Jeffrey, with a reaction_count of 10.
 
