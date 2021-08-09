@@ -30,10 +30,14 @@ class Label(EntityFile):
             return
 
         # Verify that exactly one field is labeled ID.
-        if self.types.count(Type.ID) != 1:
+        if (self.types.count(Type.ID_STRING) + self.types.count(Type.ID_INTEGER)) != 1:
             raise SchemaError("Node file '%s' should have exactly one ID column."
                               % (self.infile.name))
-        self.id = self.types.index(Type.ID) # Track the offset containing the node ID.
+        # Track the offset containing the node ID.
+        try:
+            self.id = self.types.index(Type.ID_STRING)
+        except ValueError:
+            self.id = self.types.index(Type.ID_INTEGER)
         id_field = header[self.id]
         # If the ID field specifies an ID namespace in parentheses like "val:ID(NAMESPACE)", capture the namespace.
         match = re.search(r"\((\w+)\)", id_field)

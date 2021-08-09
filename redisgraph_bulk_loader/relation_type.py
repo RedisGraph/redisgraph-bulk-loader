@@ -22,7 +22,7 @@ class RelationType(EntityFile):
         self.end_namespace = None
 
         for idx, field in enumerate(header[2:]):
-            self.column_names[idx+2] = field.strip()
+            self.column_names[idx + 2] = field.strip()
 
     def post_process_header_with_schema(self, header):
         # Can interleave these tasks if preferred.

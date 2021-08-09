@@ -46,5 +46,5 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(label.entity_str, 'LabelTest')
         self.assertEqual(label.prop_count, 2)
         self.assertEqual(label.entities_count, 2)
-        self.assertEqual(label.types[0].name, 'ID')
+        self.assertEqual(label.types[0].name, 'ID_STRING')
         self.assertEqual(label.types[1].name, 'STRING')

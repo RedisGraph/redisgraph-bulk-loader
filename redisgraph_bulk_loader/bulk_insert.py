@@ -60,6 +60,7 @@ def process_entities(entities):
 @click.option('--separator', '-o', default=',', help='Field token separator in csv file')
 # Schema options
 @click.option('--enforce-schema', '-d', default=False, is_flag=True, help='Enforce the schema described in CSV header rows')
+@click.option('--id-type', '-i', default='STRING', help='The data type of unique node ID properties (either STRING or INTEGER)')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
 @click.option('--quote', '-q', default=0, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
@@ -70,7 +71,7 @@ def process_entities(entities):
 @click.option('--max-token-size', '-t', default=64, help='max size of each token in megabytes (default 64, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
-def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
+def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, id_type, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
     if sys.version_info.major < 3 or sys.version_info.minor < 6:
         raise Exception("Python >= 3.6 is required for the RedisGraph bulk loader.")
 
@@ -83,7 +84,7 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, node
     store_node_identifiers = any(relations) or any(relations_with_type)
 
     # Initialize configurations with command-line arguments
-    config = Config(max_token_count, max_buffer_size, max_token_size, enforce_schema, skip_invalid_nodes, skip_invalid_edges, separator, int(quote), store_node_identifiers, escapechar)
+    config = Config(max_token_count, max_buffer_size, max_token_size, enforce_schema, id_type, skip_invalid_nodes, skip_invalid_edges, separator, int(quote), store_node_identifiers, escapechar)
 
     # Attempt to connect to Redis server
     try:

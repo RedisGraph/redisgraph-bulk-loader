@@ -21,10 +21,11 @@ class Type(Enum):
     INT = 4         # alias to LONG
     INTEGER = 4     # alias to LONG
     ARRAY = 5
-    ID = 6
-    START_ID = 7
-    END_ID = 8
-    IGNORE = 9
+    ID_STRING = 6
+    ID_INTEGER = 7
+    START_ID = 8
+    END_ID = 9
+    IGNORE = 10
 
 
 def convert_schema_type(in_type):
@@ -33,8 +34,8 @@ def convert_schema_type(in_type):
     except KeyError:
         # Handling for ID namespaces
         # TODO think of better alternatives
-        if in_type.startswith('ID('):
-            return Type.ID
+        if in_type.startswith('ID'):
+            return Type.ID_STRING
         elif in_type.startswith('START_ID('):
             return Type.START_ID
         elif in_type.startswith('END_ID('):
@@ -70,8 +71,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         # TODO This is not allowed in Cypher, consider how to handle it here rather than in-module.
         return struct.pack(format_str, 0)
 
-    # TODO allow ID type specification
-    if prop_type == Type.LONG:
+    if prop_type == Type.ID_INTEGER or prop_type == Type.LONG:
         try:
             numeric_prop = int(prop_val)
             return struct.pack(format_str + "q", Type.LONG.value, numeric_prop)
@@ -99,7 +99,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         else:
             raise SchemaError("Could not parse '%s' as a boolean" % prop_val)
 
-    elif prop_type == Type.ID or prop_type == Type.STRING:
+    elif prop_type == Type.ID_STRING or prop_type == Type.STRING:
         # If we've reached this point, the property is a string
         encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
@@ -112,7 +112,7 @@ def typed_prop_to_binary(prop_val, prop_type):
         return array_prop_to_binary(format_str, prop_val)
 
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
-    raise SchemaError("unable to parse [" + prop_val + "] with type ["+repr(prop_type)+"]")
+    raise SchemaError("unable to parse [" + prop_val + "] with type [" + repr(prop_type) + "]")
 
 
 # Convert a single CSV property field with an inferred type into a binary stream.
@@ -238,7 +238,7 @@ class EntityFile(object):
             col_type = convert_schema_type(pair[1].upper().strip())
 
             # If the column did not have a name but the type requires one, emit an error.
-            if len(pair[0]) == 0 and col_type not in (Type.ID, Type.START_ID, Type.END_ID, Type.IGNORE):
+            if len(pair[0]) == 0 and col_type not in (Type.ID_STRING, Type.ID_INTEGER, Type.START_ID, Type.END_ID, Type.IGNORE):
                 raise SchemaError("%s: Each property in the header should be a colon-separated pair" % (self.infile.name))
             else:
                 # We have a column name and a type.
@@ -246,6 +246,10 @@ class EntityFile(object):
                 if len(pair[0]) > 0 and col_type not in (Type.START_ID, Type.END_ID, Type.IGNORE):
                     column_name = pair[0].strip()
                     self.column_names[idx] = column_name
+
+            # ID types may be parsed as strings or integers depending on user specification.
+            if col_type == Type.ID_STRING and self.config.id_type == 'INTEGER':
+                col_type = Type.ID_INTEGER
 
             # Store the column type.
             self.types[idx] = col_type

@@ -714,6 +714,48 @@ class TestBulkLoader(unittest.TestCase):
         # We should find only the tamarins
         self.assertEqual(query_result.result_set, expected_result)
 
+    def test19_integer_ids(self):
+        """Validate that IDs can be persisted as integers."""
+
+        graphname = "id_integer_graph"
+        with open('/tmp/nodes.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['id:ID(User)', 'name:STRING'])
+            out.writerow([0, 'Jeffrey'])
+            out.writerow([1, 'Filipe'])
+
+        with open('/tmp/nodes2.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow(['id:ID(Post)', 'views:INT'])
+            out.writerow([0, 20])
+            out.writerow([1, 40])
+
+        with open('/tmp/relations.tmp', mode='w') as csv_file:
+            out = csv.writer(csv_file)
+            out.writerow([':START_ID(User)', ':END_ID(Post)'])
+            out.writerow([0, 0])
+            out.writerow([1, 1])
+
+        runner = CliRunner()
+        res = runner.invoke(bulk_insert, ['--nodes-with-label', 'User', '/tmp/nodes.tmp',
+                                          '--nodes-with-label', 'Post', '/tmp/nodes2.tmp',
+                                          '--relations-with-type', 'AUTHOR', '/tmp/relations.tmp',
+                                          '--enforce-schema',
+                                          '--id-type', 'integer',
+                                          graphname], catch_exceptions=False)
+
+        self.assertEqual(res.exit_code, 0)
+        self.assertIn('4 nodes created', res.output)
+        self.assertIn("2 relations created", res.output)
+
+        graph = Graph(graphname, self.redis_con)
+        query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
+
+        # The IDs of the results should be parsed as integers
+        expected_result = [[0, 'Jeffrey', 'User', 0, 20, 'Post'],
+                           [1, 'Filipe', 'User', 1, 40, 'Post']]
+        self.assertEqual(query_result.result_set, expected_result)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -49,6 +49,7 @@ python3 redisgraph_bulk_loader/bulk_insert.py GRAPHNAME [OPTIONS]
 |  -R   | --relations-with-type TEXT |                     Relationship Type followed by path to relationship CSV file                      |
 |  -o   | --separator CHAR           |                         Field token separator in CSV files (default: comma)                          |
 |  -d   | --enforce-schema           |                 Requires each cell to adhere to the schema defined in the CSV header                 |
+|  -i   | --id-type TEXT             |                The data type of unique node ID properties (either STRING or INTEGER)                 |
 |  -s   | --skip-invalid-nodes       |            Skip nodes that reuse previously defined IDs instead of exiting with an error             |
 |  -e   | --skip-invalid-edges       |            Skip edges that use invalid IDs for endpoints instead of exiting with an error            |
 |  -q   | --quote INT                | The quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3 |
@@ -146,7 +147,7 @@ The accepted data types are:
 |        STRING        | A string value                                                    |         Yes          |
 |        ARRAY         | An array value                                                    |         Yes          |
 
-If an `ID` column has a name string, the value will be added to each node as a property. Otherwise, it is internal to the bulk loader operation and will not appear in the graph. `START_ID` and `END_ID` columns will never be added as properties.
+If an `ID` column has a name string, the value will be added to each node as a property. This property will be a string by default, though it may be switched to integer using the `--id-type` argument. If the name string is not provided, the ID is internal to the bulk loader operation and will not appear in the graph. `START_ID` and `END_ID` columns will never be added as properties.
 
 ### ID Namespaces
 Typically, node identifiers need to be unique across all input CSVs. When using an input schema, it is (optionally) possible to create ID namespaces, and the identifier only needs to be unique across its namespace. This is particularly useful when each input CSV has primary keys which overlap with others.
