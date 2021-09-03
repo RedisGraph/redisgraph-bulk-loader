@@ -52,6 +52,9 @@ def process_entities(entities):
 @click.option('--password', '-a', default=None, help='Redis server password')
 @click.option('--user', '-w', default=None, help='Username for Redis ACL')
 @click.option('--unix-socket-path', '-u', default=None, help='Redis server unix socket path')
+@click.option('--ssl-keyfile', '-k', default=None, help='SSL keyfile')
+@click.option('--ssl-certfile', '-l', default=None, help='SSL certfile')
+@click.option('--ssl-ca-certs', '-m', default=None, help='SSL CA certs')
 # CSV file paths
 @click.option('--nodes', '-n', multiple=True, help='Path to node csv file')
 @click.option('--nodes-with-label', '-N', nargs=2, multiple=True, help='Label string followed by path to node csv file')
@@ -60,7 +63,7 @@ def process_entities(entities):
 @click.option('--separator', '-o', default=',', help='Field token separator in csv file')
 # Schema options
 @click.option('--enforce-schema', '-d', default=False, is_flag=True, help='Enforce the schema described in CSV header rows')
-@click.option('--id-type', '-i', default='STRING', help='The data type of unique node ID properties (either STRING or INTEGER)')
+@click.option('--id-type', '-j', default='STRING', help='The data type of unique node ID properties (either STRING or INTEGER)')
 @click.option('--skip-invalid-nodes', '-s', default=False, is_flag=True, help='ignore nodes that use previously defined IDs')
 @click.option('--skip-invalid-edges', '-e', default=False, is_flag=True, help='ignore invalid edges, print an error message and continue loading (True), or stop loading after an edge loading failure (False)')
 @click.option('--quote', '-q', default=0, help='the quoting format used in the CSV file. QUOTE_MINIMAL=0,QUOTE_ALL=1,QUOTE_NONNUMERIC=2,QUOTE_NONE=3')
@@ -71,7 +74,7 @@ def process_entities(entities):
 @click.option('--max-token-size', '-t', default=64, help='max size of each token in megabytes (default 64, max 512)')
 @click.option('--index', '-i', multiple=True, help='Label:Propery on which to create an index')
 @click.option('--full-text-index', '-f', multiple=True, help='Label:Propery on which to create an full text search index')
-def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, id_type, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
+def bulk_insert(graph, host, port, password, user, unix_socket_path, ssl_keyfile, ssl_certfile, ssl_ca_certs, nodes, nodes_with_label, relations, relations_with_type, separator, enforce_schema, id_type, skip_invalid_nodes, skip_invalid_edges, escapechar, quote, max_token_count, max_buffer_size, max_token_size, index, full_text_index):
     if sys.version_info.major < 3 or sys.version_info.minor < 6:
         raise Exception("Python >= 3.6 is required for the RedisGraph bulk loader.")
 
@@ -86,12 +89,30 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, nodes, node
     # Initialize configurations with command-line arguments
     config = Config(max_token_count, max_buffer_size, max_token_size, enforce_schema, id_type, skip_invalid_nodes, skip_invalid_edges, separator, int(quote), store_node_identifiers, escapechar)
 
+    kwargs = {
+        'host': host,
+        'port': port,
+        'username': user,
+        'password': password
+    }
+
+    if unix_socket_path is not None:
+        kwargs.update({
+            'unix_socket_path': unix_socket_path
+        })
+
+    if ssl_keyfile or ssl_certfile or ssl_ca_certs:
+        kwargs.update({
+            'ssl': True,
+            'ssl_keyfile': ssl_keyfile,
+            'ssl_certfile': ssl_certfile,
+            'ssl_cert_reqs': redis.ssl.CERT_REQUIRED,
+            'ssl_ca_certs': ssl_ca_certs
+        })
+
     # Attempt to connect to Redis server
     try:
-        if unix_socket_path is not None:
-            client = redis.StrictRedis(unix_socket_path=unix_socket_path, username=user, password=password)
-        else:
-            client = redis.StrictRedis(host=host, port=port, username=user, password=password)
+        client = redis.Redis(**kwargs)
     except redis.exceptions.ConnectionError as e:
         print("Could not connect to Redis server.")
         raise e
