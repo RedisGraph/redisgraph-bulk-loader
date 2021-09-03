@@ -14,6 +14,7 @@ csv.field_size_limit(sys.maxsize) # Don't limit the size of user input fields.
 class Type(Enum):
     UNKNOWN = 0
     BOOL = 1
+    BOOLEAN = 1     # alias to BOOL
     DOUBLE = 2
     FLOAT = 2       # alias to DOUBLE
     STRING = 3

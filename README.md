@@ -146,7 +146,7 @@ The accepted data types are:
 |        IGNORE        | This column will not be added to the graph                        |       Optional       |
 |    DOUBLE / FLOAT    | A signed 64-bit floating-point value                              |         Yes          |
 | INT / INTEGER / LONG | A signed 64-bit integer value                                     |         Yes          |
-|         BOOL         | A boolean value indicated by the string 'true' or 'false'         |         Yes          |
+|    BOOL / BOOLEAN    | A boolean value indicated by the string 'true' or 'false'         |         Yes          |
 |        STRING        | A string value                                                    |         Yes          |
 |        ARRAY         | An array value                                                    |         Yes          |
 

@@ -453,9 +453,9 @@ class TestBulkLoader(unittest.TestCase):
         graphname = "tmpgraph7"
         with open('/tmp/nodes.tmp', mode='w') as csv_file:
             out = csv.writer(csv_file)
-            out.writerow(['str_col:STRING', 'num_col:INT'])
-            out.writerow([0, 0])
-            out.writerow([1, 1])
+            out.writerow(['str_col:STRING', 'num_col:INT', 'bool_col:BOOLEAN'])
+            out.writerow([0, 0, True])
+            out.writerow([1, 1, False])
 
         runner = CliRunner()
         res = runner.invoke(bulk_insert, ['--nodes', '/tmp/nodes.tmp',
@@ -466,9 +466,9 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('2 nodes created', res.output)
 
         graph = Graph(graphname, self.redis_con)
-        query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col ORDER BY a.num_col')
-        expected_result = [['0', 0],
-                           ['1', 1]]
+        query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col, a.bool_col ORDER BY a.num_col')
+        expected_result = [['0', 0, True],
+                           ['1', 1, False]]
 
         # The graph should have the correct types for all properties
         self.assertEqual(query_result.result_set, expected_result)
