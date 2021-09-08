@@ -1,5 +1,6 @@
 import os
 import sys
+import ssl
 import redis
 import click
 from timeit import default_timer as timer
@@ -106,7 +107,7 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, ssl_keyfile
             'ssl': True,
             'ssl_keyfile': ssl_keyfile,
             'ssl_certfile': ssl_certfile,
-            'ssl_cert_reqs': redis.ssl.CERT_REQUIRED,
+            'ssl_cert_reqs': ssl.CERT_REQUIRED,
             'ssl_ca_certs': ssl_ca_certs
         })
 
