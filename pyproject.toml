@@ -41,7 +41,7 @@ vulture = "^2.3"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 redisgraph = "^2.4.0"
-pathos>=0.2.8
+pathos = "^0.2.8"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
