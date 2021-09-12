@@ -1,3 +1,10 @@
+from pathos.pools import ThreadPool as Pool
+
+def run(client, graphname, args):
+    result = client.execute_command("GRAPH.BULK", graphname, *args)
+    stats = result.split(', '.encode())
+    return stats
+
 class QueryBuffer:
     def __init__(self, graphname, client, config):
         self.nodes = None
@@ -30,7 +37,9 @@ class QueryBuffer:
         self.nodes_created = 0 # Total number of nodes created
         self.relations_created = 0 # Total number of relations created
 
-    # TODO consider using a queue to send commands asynchronously
+        self.pool = Pool(nodes=1)
+        self.tasks = []
+
     def send_buffer(self):
         """Send all pending inserts to Redis"""
         # Do nothing if we have no entities
@@ -43,10 +52,8 @@ class QueryBuffer:
             args.insert(0, "BEGIN")
             self.initial_query = False
 
-        result = self.client.execute_command("GRAPH.BULK", self.graphname, *args)
-        stats = result.split(', '.encode())
-        self.nodes_created += int(stats[0].split(' '.encode())[0])
-        self.relations_created += int(stats[1].split(' '.encode())[0])
+        task = self.pool.apipe(run, self.client, self.graphname, args)
+        self.tasks.append(task)
 
         self.clear_buffer()
 
@@ -59,6 +66,12 @@ class QueryBuffer:
         self.buffer_size = 0
         self.node_count = 0
         self.relation_count = 0
+    
+    def wait_pool(self):
+        for task in self.tasks:
+            stats = task.get()
+            self.nodes_created += int(stats[0].split(' '.encode())[0])
+            self.relations_created += int(stats[1].split(' '.encode())[0])
 
     def report_completion(self, runtime):
         print("Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"

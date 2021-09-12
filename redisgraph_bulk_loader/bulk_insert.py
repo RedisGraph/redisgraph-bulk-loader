@@ -39,6 +39,7 @@ def process_entities(entities):
         # Add binary data to list and update all counts
         entity.query_buffer.redis_token_count += len(entity.binary_entities)
         entity.query_buffer.buffer_size += added_size
+    entity.query_buffer.wait_pool()
 
 
 ################################################################################
