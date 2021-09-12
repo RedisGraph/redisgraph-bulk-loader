@@ -39,7 +39,6 @@ def process_entities(entities):
         # Add binary data to list and update all counts
         entity.query_buffer.redis_token_count += len(entity.binary_entities)
         entity.query_buffer.buffer_size += added_size
-    entity.query_buffer.wait_pool()
 
 
 ################################################################################
@@ -146,6 +145,7 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, ssl_keyfile
 
     # Send all remaining tokens to Redis
     query_buf.send_buffer()
+    query_buf.wait_pool()
 
     end_time = timer()
     query_buf.report_completion(end_time - start_time)
