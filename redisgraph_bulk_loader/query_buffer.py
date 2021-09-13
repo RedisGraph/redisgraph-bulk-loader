@@ -54,6 +54,8 @@ class QueryBuffer:
 
         task = self.pool.apipe(run, self.client, self.graphname, args)
         self.tasks.append(task)
+        if len(self.tasks) >= 5:
+            self.wait_pool()
 
         self.clear_buffer()
 
@@ -72,6 +74,7 @@ class QueryBuffer:
             stats = task.get()
             self.nodes_created += int(stats[0].split(' '.encode())[0])
             self.relations_created += int(stats[1].split(' '.encode())[0])
+        self.tasks.clear()
 
     def report_completion(self, runtime):
         print("Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"
