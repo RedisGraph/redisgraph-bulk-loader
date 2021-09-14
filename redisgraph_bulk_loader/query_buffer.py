@@ -70,10 +70,9 @@ class QueryBuffer:
     def add_task(self, task):
         self.tasks.append(task)
         if len(self.tasks) == 5:
-            task = self.tasks[0]
+            task = self.tasks.pop(0)
             stats = task.get()
-            self.update_stats(stats)
-            self.tasks.pop(0)
+            self.update_stats(stats)            
 
     def wait_pool(self):
         for task in self.tasks:
