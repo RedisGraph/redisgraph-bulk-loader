@@ -53,9 +53,7 @@ class QueryBuffer:
             self.initial_query = False
 
         task = self.pool.apipe(run, self.client, self.graphname, args)
-        self.tasks.append(task)
-        if len(self.tasks) >= 5:
-            self.wait_pool()
+        self.add_task(task)
 
         self.clear_buffer()
 
@@ -69,12 +67,23 @@ class QueryBuffer:
         self.node_count = 0
         self.relation_count = 0
     
+    def add_task(self, task):
+        self.tasks.append(task)
+        if len(self.tasks) == 5:
+            task = self.tasks[0]
+            stats = task.get()
+            self.update_stats(stats)
+            self.tasks.pop(0)
+
     def wait_pool(self):
         for task in self.tasks:
             stats = task.get()
-            self.nodes_created += int(stats[0].split(' '.encode())[0])
-            self.relations_created += int(stats[1].split(' '.encode())[0])
+            self.update_stats(stats)
         self.tasks.clear()
+
+    def update_stats(self, stats):
+        self.nodes_created += int(stats[0].split(' '.encode())[0])
+        self.relations_created += int(stats[1].split(' '.encode())[0])
 
     def report_completion(self, runtime):
         print("Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"
