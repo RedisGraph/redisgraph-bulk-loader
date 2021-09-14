@@ -24,7 +24,7 @@ redisgraph-bulk-insert = "redisgraph_bulk_loader.bulk_insert:bulk_insert"
 
 [tool.poetry.urls]
 url = "https://redisgraph.io"
-repository = "https://github.com/RedisGraph/redigraph-bulk-loader"
+repository = "https://github.com/RedisGraph/redisgraph-bulk-loader"
 
 [tool.poetry.dependencies]
 python = "^3.8.5"
