@@ -47,7 +47,7 @@ class RelationType(EntityFile):
 
     def process_entities(self):
         entities_created = 0
-        with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str) as reader:
+        with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str, update_min_steps=100) as reader:
             for row in reader:
                 self.validate_row(row)
                 try:

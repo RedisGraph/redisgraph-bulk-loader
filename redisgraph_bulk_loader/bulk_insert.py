@@ -145,6 +145,7 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, ssl_keyfile
 
     # Send all remaining tokens to Redis
     query_buf.send_buffer()
+    query_buf.wait_pool()
 
     end_time = timer()
     query_buf.report_completion(end_time - start_time)
