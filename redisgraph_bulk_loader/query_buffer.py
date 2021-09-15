@@ -66,7 +66,7 @@ class QueryBuffer:
         self.buffer_size = 0
         self.node_count = 0
         self.relation_count = 0
-    
+
     def add_task(self, task):
         self.tasks.append(task)
         if len(self.tasks) == 5:
