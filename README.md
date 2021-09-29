@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/RedisGraph/redisgraph-bulk-loader/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisGraph/redisgraph-bulk-loader)
 
 # redisgraph-bulk-loader
-[![Forum](https://img.shields.io/badge/Forum-RedisGraph-blue)](https://forum.redislabs.com/c/modules/redisgraph)
+[![Forum](https://img.shields.io/badge/Forum-RedisGraph-blue)](https://forum..com/c/modules/redisgraph)
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/gWBRT6P)
 
 A Python utility for building RedisGraph databases from CSV inputs
@@ -14,7 +14,7 @@ A Python utility for building RedisGraph databases from CSV inputs
 The bulk loader utility requires a Python 3 interpreter.
 
 A Redis server with the [RedisGraph](https://github.com/RedisLabsModules/RedisGraph) module must be running. Installation instructions may be found at:
-https://oss.redislabs.com/redisgraph/
+https://oss..com/redisgraph/
 
 ## Installation
 The bulk loader can be installed using pip:
