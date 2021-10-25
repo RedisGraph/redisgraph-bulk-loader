@@ -684,7 +684,7 @@ class TestBulkLoader(unittest.TestCase):
 
         r = redis.Redis(host='localhost', port=6379, decode_responses=True)
         res = r.execute_command("GRAPH.EXPLAIN", graphname, 'MATCH (p:Person) WHERE p.age > 16 RETURN p')
-        self.assertIn('        Index Scan | (p:Person)', res)
+        self.assertIn('        Node By Index Scan | (p:Person)', res)
 
     def test18_ensure_full_text_index_is_created(self):
         graphname = "index_full_text_test"
