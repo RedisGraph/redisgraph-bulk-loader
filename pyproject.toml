@@ -2,7 +2,7 @@
 name = "redisgraph-bulk-loader"
 version = "0.9.14"
 description = "RedisGraph Bulk Import Tool"
-authors = ["RedisLabs <oss@redislabs.com>"]
+authors = ["Redis Inc <oss@redis.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
 
