@@ -583,8 +583,8 @@ class TestBulkLoader(unittest.TestCase):
         graph = Graph(graphname, self.redis_con)
         query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
 
-        expected_result = [['0', 'Jeffrey', 'User', '0', 20, 'Post'],
-                           ['1', 'Filipe', 'User', '1', 40, 'Post']]
+        expected_result = [['0', 'Jeffrey', ['User'], '0', 20, ['Post']],
+                           ['1', 'Filipe', ['User'], '1', 40, ['Post']]]
         self.assertEqual(query_result.result_set, expected_result)
 
     def test14_array_properties_inferred(self):
@@ -684,7 +684,7 @@ class TestBulkLoader(unittest.TestCase):
 
         r = redis.Redis(host='localhost', port=6379, decode_responses=True)
         res = r.execute_command("GRAPH.EXPLAIN", graphname, 'MATCH (p:Person) WHERE p.age > 16 RETURN p')
-        self.assertIn('        Index Scan | (p:Person)', res)
+        self.assertIn('        Node By Index Scan | (p:Person)', res)
 
     def test18_ensure_full_text_index_is_created(self):
         graphname = "index_full_text_test"
@@ -752,8 +752,8 @@ class TestBulkLoader(unittest.TestCase):
         query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
 
         # The IDs of the results should be parsed as integers
-        expected_result = [[0, 'Jeffrey', 'User', 0, 20, 'Post'],
-                           [1, 'Filipe', 'User', 1, 40, 'Post']]
+        expected_result = [[0, 'Jeffrey', ['User'], 0, 20, ['Post']],
+                           [1, 'Filipe', ['User'], 1, 40, ['Post']]]
         self.assertEqual(query_result.result_set, expected_result)
 
 
