@@ -120,8 +120,8 @@ def bulk_insert(graph, host, port, password, user, unix_socket_path, ssl_keyfile
 
     # Attempt to verify that RedisGraph module is loaded
     try:
-        module_list = client.execute_command("MODULE LIST")
-        if not any(b'graph' in module_description for module_description in module_list):
+        module_list = [m[b'name'] for m in client.module_list()]
+        if b'graph' not in module_list:
             print("RedisGraph module not loaded on connected server.")
             sys.exit(1)
     except redis.exceptions.ResponseError:

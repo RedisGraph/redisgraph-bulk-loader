@@ -4,7 +4,7 @@ import os
 import csv
 import redis
 import unittest
-from redisgraph import Graph
+from redis import Redis
 from click.testing import CliRunner
 from redisgraph_bulk_loader.bulk_update import bulk_update
 
@@ -45,7 +45,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Nodes created: 3', res.output)
         self.assertIn('Properties set: 6', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query('MATCH (a) RETURN a.id, a.name ORDER BY a.id')
 
         # Validate that the expected results are all present in the graph
@@ -88,7 +88,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Relationships created: 3', res.output)
         self.assertIn('Properties set: 6', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query('MATCH (a)-[:R]->(b) RETURN a.name, b.name ORDER BY a.name, b.name')
 
         # Validate that the expected results are all present in the graph
@@ -115,7 +115,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Nodes created: 1', res.output)
         self.assertIn('Properties set: 5', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query('MATCH (a) RETURN a.intval, a.doubleval, a.boolval, a.stringval, a.arrayval')
 
         # Validate that the expected results are all present in the graph
@@ -144,7 +144,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Nodes created: 3', res.output)
         self.assertIn('Properties set: 6', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query('MATCH (a) RETURN a.id, a.name ORDER BY a.id')
 
         # Validate that the expected results are all present in the graph
@@ -183,7 +183,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Nodes created: 14', res.output)
         self.assertIn('Properties set: 56', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
 
         # Validate that the expected results are all present in the graph
         query_result = tmp_graph.query('MATCH (p:Person) RETURN p.name, p.age, p.gender, p.status ORDER BY p.name')
@@ -224,7 +224,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Nodes created: 3', res.output)
         self.assertIn('Properties set: 6', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query('MATCH (a) RETURN a.id, a.name ORDER BY a.id')
 
         # Validate that the expected results are all present in the graph
@@ -256,7 +256,7 @@ class TestBulkUpdate(unittest.TestCase):
         self.assertIn('Nodes created: 100000', res.output)
         self.assertIn('Properties set: 100000', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query('MATCH (a) RETURN DISTINCT a.prop')
 
         # Validate that the expected results are all present in the graph

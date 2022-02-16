@@ -2,7 +2,6 @@ import sys
 import csv
 import redis
 import click
-from redisgraph import Graph
 from timeit import default_timer as timer
 
 
@@ -28,7 +27,7 @@ class BulkUpdate:
         self.max_token_size = max_token_size * 1024 * 1024 - utf8len(self.query)
         self.filename = filename
         self.graph_name = graph_name
-        self.graph = Graph(graph_name, client)
+        self.graph = client.graph(graph_name)
         self.statistics = {}
 
     def update_statistics(self, result):
@@ -136,8 +135,8 @@ def bulk_update(graph, host, port, password, user, unix_socket_path, query, vari
 
     # Attempt to verify that RedisGraph module is loaded
     try:
-        module_list = client.execute_command("MODULE LIST")
-        if not any('graph' in module_description for module_description in module_list):
+        module_list = [m['name'] for m in client.module_list()]
+        if 'graph' not in module_list:
             print("RedisGraph module not loaded on connected server.")
             sys.exit(1)
     except redis.exceptions.ResponseError:
