@@ -5,7 +5,7 @@ import sys
 import csv
 import redis
 import unittest
-from redisgraph import Graph
+from redis import Redis
 from click.testing import CliRunner
 from redisgraph_bulk_loader.bulk_insert import bulk_insert
 
@@ -39,10 +39,13 @@ class TestBulkLoader(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Delete temporary files"""
-        os.remove('/tmp/nodes.tmp')
-        os.remove('/tmp/relations.tmp')
-        os.remove('/tmp/nodes_index.tmp')
-        os.remove('/tmp/nodes_full_text_index.tmp')
+        try:
+            os.remove('/tmp/nodes.tmp')
+            os.remove('/tmp/relations.tmp')
+            os.remove('/tmp/nodes_index.tmp')
+            os.remove('/tmp/nodes_full_text_index.tmp')
+        except OSError:
+            pass
         cls.redis_con.flushall()
 
     def validate_exception(self, res, expected_msg):
@@ -89,7 +92,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn(visited_count + " relations created for type 'VISITED'", res.output)
 
         # Open the constructed graph.
-        graph = Graph('social', self.redis_con)
+        graph = self.redis_con.graph('social')
         query_result = graph.query("MATCH (p:Person) RETURN p.name, p.age, p.gender, p.status ORDER BY p.name")
         # Verify that the Person label exists, has the correct attributes, and is properly populated.
         expected_result = [['Ailon Velger', 32, 'male', 'married'],
@@ -207,7 +210,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('3 nodes created', res.output)
         self.assertIn('2 relations created', res.output)
 
-        tmp_graph = Graph(graphname, self.redis_con)
+        tmp_graph = self.redis_con.graph(graphname)
         # The field "_identifier" should not be a property in the graph
         query_result = tmp_graph.query('MATCH (a) RETURN a')
 
@@ -280,8 +283,8 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn(knows_count + " relations created for type 'KNOWS'", res.output)
         self.assertIn(visited_count + " relations created for type 'VISITED'", res.output)
 
-        original_graph = Graph('social', self.redis_con)
-        new_graph = Graph(graphname, self.redis_con)
+        original_graph = self.redis_con.graph('social')
+        new_graph = self.redis_con.graph(graphname)
 
         # Newly-created graph should be identical to graph created in single bulk command
         original_result = original_graph.query('MATCH (p:Person) RETURN p, ID(p) ORDER BY p.name')
@@ -368,7 +371,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('3 nodes created', res.output)
         self.assertIn('3 relations created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a)-[e]->() RETURN a.numeric, a.mixed, a.bool, e.prop ORDER BY a.numeric, e.prop')
         expected_result = [[0.2, 'string_prop_1', True, True],
                            [5, 'notnull', False, 3.5],
@@ -401,7 +404,7 @@ class TestBulkLoader(unittest.TestCase):
         assert res.exit_code == 0
         assert '9 nodes created' in res.output
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         # The non-ASCII property string must be escaped backticks to parse correctly
         query_result = graph.query("""MATCH (a) RETURN a.`utf8_str_ß` ORDER BY a.id""")
         expected_strs = [['Straße'],
@@ -439,7 +442,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a) RETURN a.prop_a, a.prop_b, a.prop_c ORDER BY a.prop_a, a.prop_b, a.prop_c')
         expected_result = [['val1', 5, True],
                            [10.5, 'a', False]]
@@ -465,7 +468,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a) RETURN a.str_col, a.num_col, a.bool_col ORDER BY a.num_col')
         expected_result = [['0', 0, True],
                            ['1', 1, False]]
@@ -512,7 +515,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
         # The nodes should only have the 'str_col' property
@@ -538,7 +541,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
         # Only the first node should only have the 'mixed_col' property
@@ -580,7 +583,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('4 nodes created', res.output)
         self.assertIn("2 relations created", res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
 
         expected_result = [['0', 'Jeffrey', ['User'], '0', 20, ['Post']],
@@ -605,7 +608,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
         node_1 = {'str_col': 'str1', 'arr_col': [1, 0.2, 'nested_str', False]}
@@ -632,7 +635,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertEqual(res.exit_code, 0)
         self.assertIn('2 nodes created', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (a) RETURN a ORDER BY a.str_col')
 
         node_1 = {'str_col': 'str1', 'arr_col': [1, 0.2, 'nested_str', False]}
@@ -707,7 +710,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('4 nodes created', res.output)
         self.assertIn('Indices created: 1', res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query("CALL db.idx.fulltext.queryNodes('Monkeys', 'tamarin') YIELD node RETURN node.name")
         expected_result = [['Emperor Tamarin'], ['Golden Lion Tamarin'], ['Cotton-top Tamarin']]
 
@@ -748,7 +751,7 @@ class TestBulkLoader(unittest.TestCase):
         self.assertIn('4 nodes created', res.output)
         self.assertIn("2 relations created", res.output)
 
-        graph = Graph(graphname, self.redis_con)
+        graph = self.redis_con.graph(graphname)
         query_result = graph.query('MATCH (src)-[]->(dest) RETURN src.id, src.name, LABELS(src), dest.id, dest.views, LABELS(dest) ORDER BY src.id')
 
         # The IDs of the results should be parsed as integers
