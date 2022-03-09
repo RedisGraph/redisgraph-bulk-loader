@@ -40,11 +40,12 @@ codecov = "^2.1.11"
 flake8 = "^3.9.2"
 tox = "^3.23.1"
 tox-poetry = "^0.3.0"
-bandit = "^1.7.0"
-vulture = "^2.3"
+bandit = "^1.6.0"
+vulture = "^2.3.0"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 pathos = "^0.2.8"
+importlib-metadata = "^4.11.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
