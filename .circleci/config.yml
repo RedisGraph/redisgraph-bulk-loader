@@ -120,6 +120,8 @@ python-versions: &python-versions
   matrix:
     parameters:
       python_version:
+        - "3.6.15"
+        - "3.7.12"
         - "3.8.9"
         - "3.9.4"
         - "3.10.0"
