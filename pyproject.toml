@@ -30,22 +30,20 @@ url = "https://redisgraph.io"
 repository = "https://github.com/RedisGraph/redisgraph-bulk-loader"
 
 [tool.poetry.dependencies]
-python = "^3.8.5"
+python = "^3.6.0"
 click = "^8.0.1"
 redis = "^4.1.4"
-pathos = "^0.2.8"
 
 [tool.poetry.dev-dependencies]
 codecov = "^2.1.11"
 flake8 = "^3.9.2"
-tox = "^3.23.1"
+tox = "^3.15.0"
 tox-poetry = "^0.3.0"
 vulture = "^2.3.0"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 pathos = "^0.2.8"
-importlib-metadata = "^1.6.0"
-typing-extensions = "^4.0.0"
+typing-extensions = "^4.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
