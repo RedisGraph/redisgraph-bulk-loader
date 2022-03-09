@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "redisgraph-bulk-loader"
-version = "0.10.0"
+version = "0.10.1"
 description = "RedisGraph Bulk Import Tool"
 authors = ["Redis Inc <oss@redis.com>"]
 license = "BSD-3-Clause"
