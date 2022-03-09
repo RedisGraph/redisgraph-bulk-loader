@@ -45,7 +45,8 @@ vulture = "^2.3.0"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 pathos = "^0.2.8"
-importlib-metadata = "^4.11.2"
+importlib-metadata = "^3.0.0"
+typing-extensions = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
