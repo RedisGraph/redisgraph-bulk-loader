@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "redisgraph-bulk-loader"
-version = "0.10.0"
+version = "0.10.1"
 description = "RedisGraph Bulk Import Tool"
 authors = ["Redis Inc <oss@redis.com>"]
 license = "BSD-3-Clause"
@@ -10,6 +10,8 @@ classifiers = [
     'Topic :: Database',
     'Programming Language :: Python',
     'Intended Audience :: Developers',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
@@ -28,21 +30,20 @@ url = "https://redisgraph.io"
 repository = "https://github.com/RedisGraph/redisgraph-bulk-loader"
 
 [tool.poetry.dependencies]
-python = "^3.8.5"
+python = "^3.6.0"
 click = "^8.0.1"
 redis = "^4.1.4"
-pathos = "^0.2.8"
 
 [tool.poetry.dev-dependencies]
 codecov = "^2.1.11"
 flake8 = "^3.9.2"
-tox = "^3.23.1"
+tox = "^3.15.0"
 tox-poetry = "^0.3.0"
-bandit = "^1.7.0"
-vulture = "^2.3"
+vulture = "^2.3.0"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 pathos = "^0.2.8"
+typing-extensions = "^4.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

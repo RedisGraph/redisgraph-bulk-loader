@@ -62,7 +62,7 @@ commands:
           command: |
             # https://github.com/python-poetry/poetry/issues/4210
             poetry config experimental.new-installer false
-            poetry install
+            poetry install --no-dev
 
       - run:
           name: build sdist and wheels
@@ -120,6 +120,8 @@ python-versions: &python-versions
   matrix:
     parameters:
       python_version:
+        - "3.6.15"
+        - "3.7.12"
         - "3.8.9"
         - "3.9.4"
         - "3.10.0"
