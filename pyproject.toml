@@ -33,6 +33,7 @@ repository = "https://github.com/RedisGraph/redisgraph-bulk-loader"
 python = "^3.6.0"
 click = "^8.0.1"
 redis = "^4.1.4"
+pathos = "^0.2.8"
 
 [tool.poetry.dev-dependencies]
 codecov = "^2.1.11"
@@ -42,7 +43,6 @@ tox-poetry = "^0.3.0"
 vulture = "^2.3.0"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
-pathos = "^0.2.8"
 typing-extensions = "^4.1.1"
 
 [build-system]
