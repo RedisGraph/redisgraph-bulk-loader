@@ -80,7 +80,7 @@ The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typ
 
 `--enforce-schema-type` indicates that input CSV headers will follow the form described in [Input Schemas](#input-schemas).
 
-`--nodes-with-label` and `--relations-with-type` allows the node label or relationship type to be explicitly written instead of inferring them from the filename. For example, `--relations-with-type HAS_TAG post_hasTag_tag.csv` will add all relationships described in the specified CSV with the type `HAS_TAG`.
+`--nodes-with-label` and `--relations-with-type` allows the node label or relationship type to be explicitly written instead of inferring them from the filename. For example, `--relations-with-type HAS_TAG post_hasTag_tag.csv` will add all relationships described in the specified CSV with the type `HAS_TAG`. To specify miltiple label separate them with ':'. For example, `--nodes-with-label Actor:Director actors.csv` will add all nodes described in the specified CSV with the labels `Actor` and `Director`.
 
 ## Input constraints
 ### Node identifiers
