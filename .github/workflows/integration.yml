@@ -31,7 +31,7 @@ jobs:
           python-version: ${{env.basepython}}
       - uses: actions/checkout@v2
         with:
-          key: ${{hashFiles('pyproject.toml')}
+          key: ${{hashFiles('pyproject.toml')}}
           path:
             - ~/.cache/pip
             - ~/.cache/pypoetry
@@ -58,7 +58,7 @@ jobs:
           python-version: ${{matrix.python-version}}
       - uses: actions/checkout@v2
         with:
-          key: ${{hashFiles('pyproject.toml')}
+          key: ${{hashFiles('pyproject.toml')}}
           path:
             - ~/.cache/pip
             - ~/.cache/pypoetry
