@@ -78,7 +78,8 @@ jobs:
 
       - name: prepare the environment
         run: |
-          pip install -U setuptools pip poetry tox-docker
+          pip install -U setuptools pip poetry tox-docker tox-poetry
+          poetry config virtualenvs.create false
           poetry install
       - name: run tests
         run: tox -e cover
