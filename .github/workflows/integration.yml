@@ -55,7 +55,6 @@ jobs:
         run: |
           pip install -U setuptools pip poetry tox-docker
       - name: lint
-      - name: lint
         run: tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v2
