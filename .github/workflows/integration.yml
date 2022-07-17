@@ -29,6 +29,27 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{env.basepython}}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-in-project: false
+          virtualenvs-create: true
+          installer-parallel: true
+          virtualenvs-path: ~/.virtualenvs
+
+      - name: Cache paths
+        uses: actions/cache@v2
+        with:
+          path: |
+            .tox
+            ~/.virtualenvs
+            ~/.cache/pip
+            ~/.cache/pypoetry
+          key: lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+          restore-keys: |
+            lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+
       - name: prepare the environment
         run: |
           pip install -U setuptools pip poetry tox-docker
@@ -49,10 +70,31 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.python-version}}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-in-project: false
+          virtualenvs-create: true
+          installer-parallel: true
+          virtualenvs-path: ~/.virtualenvs
+      - name: Cache paths
+        uses: actions/cache@v2
+        with:
+          path: |
+            .tox
+            ~/.virtualenvs
+            ~/.cache/pip
+            ~/.cache/pypoetry
+          key: cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+          restore-keys: |
+            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+
       - name: prepare the environment
         run: |
           pip install -U setuptools pip poetry tox-docker
-      - name: lint
+          poetry install
+      - name: run tests
         run: tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v2
