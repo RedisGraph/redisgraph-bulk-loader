@@ -1,26 +1,27 @@
-import os
-import io
-import csv
 import ast
-import sys
+import csv
+import io
 import math
+import os
 import struct
+import sys
 from enum import Enum
-from exceptions import CSVError, SchemaError
 
-csv.field_size_limit(sys.maxsize) # Don't limit the size of user input fields.
+from .exceptions import CSVError, SchemaError
+
+csv.field_size_limit(sys.maxsize)  # Don't limit the size of user input fields.
 
 
 class Type(Enum):
     UNKNOWN = 0
     BOOL = 1
-    BOOLEAN = 1     # alias to BOOL
+    BOOLEAN = 1  # alias to BOOL
     DOUBLE = 2
-    FLOAT = 2       # alias to DOUBLE
+    FLOAT = 2  # alias to DOUBLE
     STRING = 3
     LONG = 4
-    INT = 4         # alias to LONG
-    INTEGER = 4     # alias to LONG
+    INT = 4  # alias to LONG
+    INTEGER = 4  # alias to LONG
     ARRAY = 5
     ID_STRING = 6
     ID_INTEGER = 7
@@ -35,14 +36,14 @@ def convert_schema_type(in_type):
     except KeyError:
         # Handling for ID namespaces
         # TODO think of better alternatives
-        if in_type.startswith('ID'):
+        if in_type.startswith("ID"):
             return Type.ID_STRING
-        elif in_type.startswith('START_ID('):
+        elif in_type.startswith("START_ID("):
             return Type.START_ID
-        elif in_type.startswith('END_ID('):
+        elif in_type.startswith("END_ID("):
             return Type.END_ID
         else:
-            raise SchemaError("Encountered invalid field type '%s'" % in_type)
+            raise SchemaError(f"Encountered invalid field type '{in_type}'")
 
 
 def array_prop_to_binary(format_str, prop_val):
@@ -79,41 +80,47 @@ def typed_prop_to_binary(prop_val, prop_type):
         except (ValueError, struct.error):
             # TODO ugly, rethink
             if prop_type == Type.LONG:
-                raise SchemaError("Could not parse '%s' as a long" % prop_val)
+                raise SchemaError(f"Could not parse '{prop_val}' as a long")
 
     elif prop_type == Type.DOUBLE:
         try:
             numeric_prop = float(prop_val)
-            if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
+            if not math.isnan(numeric_prop) and not math.isinf(
+                numeric_prop
+            ):  # Don't accept non-finite values.
                 return struct.pack(format_str + "d", Type.DOUBLE.value, numeric_prop)
         except (ValueError, struct.error):
             # TODO ugly, rethink
             if prop_type == Type.DOUBLE:
-                raise SchemaError("Could not parse '%s' as a double" % prop_val)
+                raise SchemaError(f"Could not parse '{prop_val}' as a double")
 
     elif prop_type == Type.BOOL:
         # If field is 'false' or 'true', it is a boolean
-        if prop_val.lower() == 'false':
-            return struct.pack(format_str + '?', Type.BOOL.value, False)
-        elif prop_val.lower() == 'true':
-            return struct.pack(format_str + '?', Type.BOOL.value, True)
+        if prop_val.lower() == "false":
+            return struct.pack(format_str + "?", Type.BOOL.value, False)
+        elif prop_val.lower() == "true":
+            return struct.pack(format_str + "?", Type.BOOL.value, True)
         else:
-            raise SchemaError("Could not parse '%s' as a boolean" % prop_val)
+            raise SchemaError(f"Could not parse '{prop_val}' as a boolean")
 
     elif prop_type == Type.ID_STRING or prop_type == Type.STRING:
         # If we've reached this point, the property is a string
-        encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
+        encoded_str = str.encode(
+            prop_val
+        )  # struct.pack requires bytes objects as arguments
         # Encoding len+1 adds a null terminator to the string
         format_str += "%ds" % (len(encoded_str) + 1)
         return struct.pack(format_str, Type.STRING.value, encoded_str)
 
     elif prop_type == Type.ARRAY:
-        if prop_val[0] != '[' or prop_val[-1] != ']':
-            raise SchemaError("Could not parse '%s' as an array" % prop_val)
+        if prop_val[0] != "[" or prop_val[-1] != "]":
+            raise SchemaError(f"Could not parse '{prop_val}' as an array")
         return array_prop_to_binary(format_str, prop_val)
 
     # If it hasn't returned by this point, it is trying to set it to a type that it can't adopt
-    raise SchemaError("unable to parse [" + prop_val + "] with type [" + repr(prop_type) + "]")
+    raise SchemaError(
+        "unable to parse [" + prop_val + "] with type [" + repr(prop_type) + "]"
+    )
 
 
 # Convert a single CSV property field with an inferred type into a binary stream.
@@ -140,26 +147,30 @@ def inferred_prop_to_binary(prop_val):
     # Try to parse value as a float.
     try:
         numeric_prop = float(prop_val)
-        if not math.isnan(numeric_prop) and not math.isinf(numeric_prop): # Don't accept non-finite values.
+        if not math.isnan(numeric_prop) and not math.isinf(
+            numeric_prop
+        ):  # Don't accept non-finite values.
             return struct.pack(format_str + "d", Type.DOUBLE.value, numeric_prop)
     except (ValueError, struct.error):
         pass
 
     # If field is 'false' or 'true', it is a boolean.
-    if prop_val.lower() == 'false':
-        return struct.pack(format_str + '?', Type.BOOL.value, False)
-    elif prop_val.lower() == 'true':
-        return struct.pack(format_str + '?', Type.BOOL.value, True)
+    if prop_val.lower() == "false":
+        return struct.pack(format_str + "?", Type.BOOL.value, False)
+    elif prop_val.lower() == "true":
+        return struct.pack(format_str + "?", Type.BOOL.value, True)
 
     # If the property string is bracket-interpolated, it is an array.
-    if prop_val[0] == '[' and prop_val[-1] == ']':
+    if prop_val[0] == "[" and prop_val[-1] == "]":
         try:
             return array_prop_to_binary(format_str, prop_val)
-        except:
+        except Exception:
             pass
 
     # If we've reached this point, the property is a string.
-    encoded_str = str.encode(prop_val) # struct.pack requires bytes objects as arguments
+    encoded_str = str.encode(
+        prop_val
+    )  # struct.pack requires bytes objects as arguments
     # Encoding len+1 adds a null terminator to the string
     format_str += "%ds" % (len(encoded_str) + 1)
     return struct.pack(format_str, Type.STRING.value, encoded_str)
@@ -167,6 +178,7 @@ def inferred_prop_to_binary(prop_val):
 
 class EntityFile(object):
     """Superclass for Label and RelationType classes"""
+
     def __init__(self, filename, label, config):
         # The configurations for this run.
         self.config = config
@@ -177,19 +189,25 @@ class EntityFile(object):
         else:
             self.entity_str = os.path.splitext(os.path.basename(filename))[0]
         # Input file handling
-        self.infile = io.open(filename, 'rt')
+        self.infile = io.open(filename, "rt")
 
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter=config.separator, skipinitialspace=True, quoting=config.quoting, escapechar=config.escapechar)
+        self.reader = csv.reader(
+            self.infile,
+            delimiter=config.separator,
+            skipinitialspace=True,
+            quoting=config.quoting,
+            escapechar=config.escapechar,
+        )
 
-        self.packed_header = b''
+        self.packed_header = b""
         self.binary_entities = []
-        self.binary_size = 0 # size of binary token
+        self.binary_size = 0  # size of binary token
 
-        self.convert_header() # Extract data from header row.
-        self.count_entities() # Count number of entities/row in file.
-        next(self.reader) # Skip the header row.
+        self.convert_header()  # Extract data from header row.
+        self.count_entities()  # Count number of entities/row in file.
+        next(self.reader)  # Skip the header row.
 
     # Count number of rows in file.
     def count_entities(self):
@@ -203,8 +221,16 @@ class EntityFile(object):
     def validate_row(self, row):
         # Each row should have the same number of fields
         if len(row) != self.column_count:
-            raise CSVError("%s:%d Expected %d columns, encountered %d ('%s')"
-                           % (self.infile.name, self.reader.line_num, self.column_count, len(row), self.config.separator.join(row)))
+            raise CSVError(
+                "%s:%d Expected %d columns, encountered %d ('%s')"
+                % (
+                    self.infile.name,
+                    self.reader.line_num,
+                    self.column_count,
+                    len(row),
+                    self.config.separator.join(row),
+                )
+            )
 
     # If part of a CSV file was sent to Redis, delete the processed entities and update the binary size
     def reset_partial_binary(self):
@@ -215,41 +241,57 @@ class EntityFile(object):
     def pack_header(self):
         # String format
         entity_bytes = self.entity_str.encode()
-        fmt = "=%dsI" % (len(entity_bytes) + 1) # Unaligned native, entity name, count of properties
+        fmt = "=%dsI" % (
+            len(entity_bytes) + 1
+        )  # Unaligned native, entity name, count of properties
         args = [entity_bytes, self.prop_count]
         for idx in range(self.column_count):
             if not self.column_names[idx]:
                 continue
             prop = self.column_names[idx].encode()
-            fmt += "%ds" % (len(prop) + 1) # encode string with a null terminator
+            fmt += "%ds" % (len(prop) + 1)  # encode string with a null terminator
             args.append(prop)
         return struct.pack(fmt, *args)
 
     def convert_header_with_schema(self, header):
-        self.types = [None] * self.column_count # Value type of every column.
+        self.types = [None] * self.column_count  # Value type of every column.
         for idx, field in enumerate(header):
-            pair = field.split(':')
+            pair = field.split(":")
 
             # Multiple colons found in column name, emit error.
             # TODO might need to check for backtick escapes
             if len(pair) > 2:
-                raise CSVError("%s: Field '%s' had %d colons" % (self.infile.name, field, len(field)))
+                raise CSVError(
+                    f"{self.infile.name}: Field '{field}' had {len(field)} colons"
+                )
 
             # Convert the column type.
             col_type = convert_schema_type(pair[1].upper().strip())
 
             # If the column did not have a name but the type requires one, emit an error.
-            if len(pair[0]) == 0 and col_type not in (Type.ID_STRING, Type.ID_INTEGER, Type.START_ID, Type.END_ID, Type.IGNORE):
-                raise SchemaError("%s: Each property in the header should be a colon-separated pair" % (self.infile.name))
+            if len(pair[0]) == 0 and col_type not in (
+                Type.ID_STRING,
+                Type.ID_INTEGER,
+                Type.START_ID,
+                Type.END_ID,
+                Type.IGNORE,
+            ):
+                raise SchemaError(
+                    f"{self.infile.name}: Each property in the header should be a colon-separated pair"
+                )
             else:
                 # We have a column name and a type.
                 # Only store the name if the column's values should be added as properties.
-                if len(pair[0]) > 0 and col_type not in (Type.START_ID, Type.END_ID, Type.IGNORE):
+                if len(pair[0]) > 0 and col_type not in (
+                    Type.START_ID,
+                    Type.END_ID,
+                    Type.IGNORE,
+                ):
                     column_name = pair[0].strip()
                     self.column_names[idx] = column_name
 
             # ID types may be parsed as strings or integers depending on user specification.
-            if col_type == Type.ID_STRING and self.config.id_type == 'INTEGER':
+            if col_type == Type.ID_STRING and self.config.id_type == "INTEGER":
                 col_type = Type.ID_INTEGER
 
             # Store the column type.
@@ -258,7 +300,9 @@ class EntityFile(object):
     def convert_header(self):
         header = next(self.reader)
         self.column_count = len(header)
-        self.column_names = [None] * self.column_count   # Property names of every column; None if column does not update graph.
+        self.column_names = [
+            None
+        ] * self.column_count  # Property names of every column; None if column does not update graph.
 
         if self.config.enforce_schema:
             # Use generic logic to convert the header with schema.
@@ -284,7 +328,7 @@ class EntityFile(object):
                 props.append(typed_prop_to_binary(field, self.types[idx]))
             else:
                 props.append(inferred_prop_to_binary(field))
-        return b''.join(p for p in props)
+        return b"".join(p for p in props)
 
     def to_binary(self):
-        return self.packed_header + b''.join(self.binary_entities)
+        return self.packed_header + b"".join(self.binary_entities)

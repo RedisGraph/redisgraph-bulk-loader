@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - 'examples*/**'
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+  schedule:
+    - cron: '5 4 * * *'
+
+env:
+  basepython: 3.9
+
+jobs:
+  lint:
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+    name: Code linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: install base python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{env.basepython}}
+          cache: 'poetry'
+      - name: prepare the environment
+        run: |
+          pip install -U setuptools pip poetry tox-docker
+      - name: lint
+        run: tox -e linters
+
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+    name: Test Python ${{matrix.python-version}}
+    steps:
+      - uses: actions/checkout@v3
+      - name: install base python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{matrix.python-version}}
+          cache: 'poetry'
+      - name: prepare the environment
+        run: |
+          pip install -U setuptools pip poetry tox-docker
+      - name: lint
+      - name: lint
+        run: tox -e cover
+      - name: Upload coverage
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOVTOKEN }}

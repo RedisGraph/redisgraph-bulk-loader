@@ -1,3 +1,3 @@
 __all__ = [
-    'bulk_insert',
+    "bulk_insert",
 ]
