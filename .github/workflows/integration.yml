@@ -52,8 +52,8 @@ jobs:
 
       - name: prepare the environment
         run: |
-          pip install -U setuptools pip poetry tox-docker
           poetry install
+          pip install -U setuptools pip poetry tox-docker
       - name: lint
         run: tox -e linters
 
@@ -93,8 +93,8 @@ jobs:
 #
 #      - name: prepare the environment
 #        run: |
-#          pip install -U setuptools pip poetry tox-docker
 #          poetry install
+#          pip install -U setuptools pip poetry tox-docker
 #      - name: run tests
 #        run: tox -e cover
 #      - name: Upload coverage
