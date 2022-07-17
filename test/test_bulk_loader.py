@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import csv
 import os
 import sys
-import csv
-import redis
 import unittest
-from redis import Redis
+
+import redis
 from click.testing import CliRunner
+from redis import Redis
+
 from redisgraph_bulk_loader.bulk_insert import bulk_insert
 
 # Globals for validating example graph
