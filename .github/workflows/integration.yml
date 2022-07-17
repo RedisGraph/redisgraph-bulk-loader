@@ -29,13 +29,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{env.basepython}}
-      - uses: actions/checkout@v2
-        with:
-          key: ${{hashFiles('pyproject.toml')}}
-          path:
-            - ~/.cache/pip
-            - ~/.cache/pypoetry
-
       - name: prepare the environment
         run: |
           pip install -U setuptools pip poetry tox-docker
@@ -56,12 +49,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.python-version}}
-      - uses: actions/checkout@v2
-        with:
-          key: ${{hashFiles('pyproject.toml')}}
-          path:
-            - ~/.cache/pip
-            - ~/.cache/pypoetry
       - name: prepare the environment
         run: |
           pip install -U setuptools pip poetry tox-docker
