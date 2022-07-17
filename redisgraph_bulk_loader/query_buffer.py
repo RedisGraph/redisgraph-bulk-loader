@@ -1,9 +1,11 @@
 from pathos.pools import ThreadPool as Pool
 
+
 def run(client, graphname, args):
     result = client.execute_command("GRAPH.BULK", graphname, *args)
-    stats = result.split(', '.encode())
+    stats = result.split(", ".encode())
     return stats
+
 
 class QueryBuffer:
     def __init__(self, graphname, client, config):
@@ -31,11 +33,11 @@ class QueryBuffer:
         self.node_count = 0
         self.relation_count = 0
 
-        self.labels = [] # List containing all pending Label objects
-        self.reltypes = [] # List containing all pending RelationType objects
+        self.labels = []  # List containing all pending Label objects
+        self.reltypes = []  # List containing all pending RelationType objects
 
-        self.nodes_created = 0 # Total number of nodes created
-        self.relations_created = 0 # Total number of relations created
+        self.nodes_created = 0  # Total number of nodes created
+        self.relations_created = 0  # Total number of relations created
 
         self.pool = Pool(nodes=1)
         self.tasks = []
@@ -46,7 +48,11 @@ class QueryBuffer:
         if self.node_count == 0 and self.relation_count == 0:
             return
 
-        args = [self.node_count, self.relation_count, len(self.labels), len(self.reltypes)] + self.labels + self.reltypes
+        args = (
+            [self.node_count, self.relation_count, len(self.labels), len(self.reltypes)]
+            + self.labels
+            + self.reltypes
+        )
         # Prepend a "BEGIN" token if this is the first query
         if self.initial_query:
             args.insert(0, "BEGIN")
@@ -81,9 +87,11 @@ class QueryBuffer:
         self.tasks.clear()
 
     def update_stats(self, stats):
-        self.nodes_created += int(stats[0].split(' '.encode())[0])
-        self.relations_created += int(stats[1].split(' '.encode())[0])
+        self.nodes_created += int(stats[0].split(" ".encode())[0])
+        self.relations_created += int(stats[1].split(" ".encode())[0])
 
     def report_completion(self, runtime):
-        print("Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"
-              % (self.graphname, self.nodes_created, self.relations_created, runtime))
+        print(
+            "Construction of graph '%s' complete: %d nodes created, %d relations created in %f seconds"
+            % (self.graphname, self.nodes_created, self.relations_created, runtime)
+        )

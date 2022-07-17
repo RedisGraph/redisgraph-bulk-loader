@@ -1,12 +1,15 @@
 import re
 import sys
+
 import click
-from entity_file import Type, EntityFile
-from exceptions import SchemaError
+
+from .entity_file import EntityFile, Type
+from .exceptions import SchemaError
 
 
 class Label(EntityFile):
     """Handler class for processing Label CSV files."""
+
     def __init__(self, query_buffer, infile, label_str, config):
         self.id_namespace = None
         self.query_buffer = query_buffer
@@ -21,7 +24,7 @@ class Label(EntityFile):
             field = field.strip()
             self.column_names[idx] = field
 
-        if header[0][0] == '_':
+        if header[0][0] == "_":
             self.column_names[0] = None
 
     def post_process_header_with_schema(self, header):
@@ -31,8 +34,9 @@ class Label(EntityFile):
 
         # Verify that exactly one field is labeled ID.
         if (self.types.count(Type.ID_STRING) + self.types.count(Type.ID_INTEGER)) != 1:
-            raise SchemaError("Node file '%s' should have exactly one ID column."
-                              % (self.infile.name))
+            raise SchemaError(
+                f"Node file '{self.infile.name}' should have exactly one ID column."
+            )
         # Track the offset containing the node ID.
         try:
             self.id = self.types.index(Type.ID_STRING)
@@ -47,8 +51,10 @@ class Label(EntityFile):
     def update_node_dictionary(self, identifier):
         """Add identifier->ID pair to dictionary if we are building relations"""
         if identifier in self.query_buffer.nodes:
-            sys.stderr.write("Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
-                             % (identifier, self.infile.name, self.reader.line_num))
+            sys.stderr.write(
+                "Node identifier '%s' was used multiple times - second occurrence at %s:%d\n"
+                % (identifier, self.infile.name, self.reader.line_num)
+            )
             if self.config.skip_invalid_nodes is False:
                 sys.exit(1)
         self.query_buffer.nodes[identifier] = self.query_buffer.top_node_id
@@ -56,7 +62,12 @@ class Label(EntityFile):
 
     def process_entities(self):
         entities_created = 0
-        with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str, update_min_steps=100) as reader:
+        with click.progressbar(
+            self.reader,
+            length=self.entities_count,
+            label=self.entity_str,
+            update_min_steps=100,
+        ) as reader:
             for row in reader:
                 self.validate_row(row)
 
@@ -64,20 +75,27 @@ class Label(EntityFile):
                 if self.config.store_node_identifiers:
                     id_field = row[self.id]
                     if self.id_namespace is not None:
-                        id_field = self.id_namespace + '.' + str(id_field)
+                        id_field = self.id_namespace + "." + str(id_field)
                     self.update_node_dictionary(id_field)
 
                 try:
                     row_binary = self.pack_props(row)
                 except SchemaError as e:
                     # TODO why is line_num off by one?
-                    raise SchemaError("%s:%d %s" % (self.infile.name, self.reader.line_num - 1, str(e)))
+                    raise SchemaError(
+                        "%s:%d %s"
+                        % (self.infile.name, self.reader.line_num - 1, str(e))
+                    )
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
                 # TODO how much of this can be made uniform w/ relations and moved to Querybuffer?
                 added_size = self.binary_size + row_binary_len
-                if added_size >= self.config.max_token_size or self.query_buffer.buffer_size + added_size >= self.config.max_buffer_size:
+                if (
+                    added_size >= self.config.max_token_size
+                    or self.query_buffer.buffer_size + added_size
+                    >= self.config.max_buffer_size
+                ):
                     self.query_buffer.labels.append(self.to_binary())
                     self.query_buffer.send_buffer()
                     self.reset_partial_binary()

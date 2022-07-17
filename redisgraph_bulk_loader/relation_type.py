@@ -1,8 +1,10 @@
 import re
 import struct
+
 import click
-from entity_file import Type, EntityFile
-from exceptions import CSVError, SchemaError
+
+from .entity_file import EntityFile, Type
+from .exceptions import CSVError, SchemaError
 
 
 # Handler class for processing relation csv files.
@@ -13,8 +15,10 @@ class RelationType(EntityFile):
 
     def process_schemaless_header(self, header):
         if self.column_count < 2:
-            raise CSVError("Relation file '%s' should have at least 2 elements in header line."
-                           % (self.infile.name))
+            raise CSVError(
+                "Relation file '%s' should have at least 2 elements in header line."
+                % (self.infile.name)
+            )
         # The first column is the source ID and the second is the destination ID.
         self.start_id = 0
         self.end_id = 1
@@ -27,11 +31,15 @@ class RelationType(EntityFile):
     def post_process_header_with_schema(self, header):
         # Can interleave these tasks if preferred.
         if self.types.count(Type.START_ID) != 1:
-            raise SchemaError("Relation file '%s' should have exactly one START_ID column."
-                              % (self.infile.name))
+            raise SchemaError(
+                "Relation file '%s' should have exactly one START_ID column."
+                % (self.infile.name)
+            )
         if self.types.count(Type.END_ID) != 1:
-            raise SchemaError("Relation file '%s' should have exactly one END_ID column."
-                              % (self.infile.name))
+            raise SchemaError(
+                "Relation file '%s' should have exactly one END_ID column."
+                % (self.infile.name)
+            )
 
         self.start_id = self.types.index(Type.START_ID)
         self.end_id = self.types.index(Type.END_ID)
@@ -47,35 +55,53 @@ class RelationType(EntityFile):
 
     def process_entities(self):
         entities_created = 0
-        with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str, update_min_steps=100) as reader:
+        with click.progressbar(
+            self.reader,
+            length=self.entities_count,
+            label=self.entity_str,
+            update_min_steps=100,
+        ) as reader:
             for row in reader:
                 self.validate_row(row)
                 try:
                     start_id = row[self.start_id]
                     if self.start_namespace:
-                        start_id = self.start_namespace + '.' + str(start_id)
+                        start_id = self.start_namespace + "." + str(start_id)
                     end_id = row[self.end_id]
                     if self.end_namespace:
-                        end_id = self.end_namespace + '.' + str(end_id)
+                        end_id = self.end_namespace + "." + str(end_id)
 
                     src = self.query_buffer.nodes[start_id]
                     dest = self.query_buffer.nodes[end_id]
                 except KeyError as e:
-                    print("%s:%d Relationship specified a non-existent identifier. src: %s; dest: %s" %
-                          (self.infile.name, self.reader.line_num - 1, row[self.start_id], row[self.end_id]))
+                    print(
+                        "%s:%d Relationship specified a non-existent identifier. src: %s; dest: %s"
+                        % (
+                            self.infile.name,
+                            self.reader.line_num - 1,
+                            row[self.start_id],
+                            row[self.end_id],
+                        )
+                    )
                     if self.config.skip_invalid_edges is False:
                         raise e
                     continue
-                fmt = "=QQ" # 8-byte unsigned ints for src and dest
+                fmt = "=QQ"  # 8-byte unsigned ints for src and dest
                 try:
                     row_binary = struct.pack(fmt, src, dest) + self.pack_props(row)
                 except SchemaError as e:
-                    raise SchemaError("%s:%d %s" % (self.infile.name, self.reader.line_num, str(e)))
+                    raise SchemaError(
+                        "%s:%d %s" % (self.infile.name, self.reader.line_num, str(e))
+                    )
                 row_binary_len = len(row_binary)
                 # If the addition of this entity will make the binary token grow too large,
                 # send the buffer now.
                 added_size = self.binary_size + row_binary_len
-                if added_size >= self.config.max_token_size or self.query_buffer.buffer_size + added_size >= self.config.max_buffer_size:
+                if (
+                    added_size >= self.config.max_token_size
+                    or self.query_buffer.buffer_size + added_size
+                    >= self.config.max_buffer_size
+                ):
                     self.query_buffer.reltypes.append(self.to_binary())
                     self.query_buffer.send_buffer()
                     self.reset_partial_binary()
@@ -88,4 +114,6 @@ class RelationType(EntityFile):
                 self.binary_entities.append(row_binary)
             self.query_buffer.reltypes.append(self.to_binary())
         self.infile.close()
-        print("%d relations created for type '%s'" % (entities_created, self.entity_str))
+        print(
+            "%d relations created for type '%s'" % (entities_created, self.entity_str)
+        )
