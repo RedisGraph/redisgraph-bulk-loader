@@ -2,6 +2,7 @@ import re
 import struct
 
 import click
+
 from .entity_file import EntityFile, Type
 from .exceptions import CSVError, SchemaError
 

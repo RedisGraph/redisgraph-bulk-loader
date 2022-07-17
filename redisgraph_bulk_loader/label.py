@@ -2,6 +2,7 @@ import re
 import sys
 
 import click
+
 from .entity_file import EntityFile, Type
 from .exceptions import SchemaError
 
@@ -34,7 +35,7 @@ class Label(EntityFile):
         # Verify that exactly one field is labeled ID.
         if (self.types.count(Type.ID_STRING) + self.types.count(Type.ID_INTEGER)) != 1:
             raise SchemaError(
-                "Node file '%s' should have exactly one ID column." % (self.infile.name)
+                f"Node file '{self.infile.name}' should have exactly one ID column."
             )
         # Track the offset containing the node ID.
         try:
