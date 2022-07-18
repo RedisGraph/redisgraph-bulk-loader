@@ -39,13 +39,7 @@ python3 redisgraph_bulk_loader/bulk_insert.py GRAPHNAME [OPTIONS]
 
 | Flags | Extended flags             |                                              Parameter                                               |
 |:-----:|----------------------------|:----------------------------------------------------------------------------------------------------:|
-|  -h   | --host TEXT                |                                Redis server host (default: 127.0.0.1)                                |
-|  -p   | --port INTEGER             |                                  Redis server port (default: 6379)                                   |
-|  -a   | --password TEXT            |                                Redis server password (default: none)                                 |
-|  -u   | --unix-socket-path TEXT    |                                Redis unix socket path (default: none)                                |
-|  -k   | --ssl-keyfile TEXT         |                                 Path to SSL keyfile (default: none)                                  |
-|  -l   | --ssl-certfile TEXT        |                                 Path to SSL certfile (default: none)                                 |
-|  -m   | --ssl-ca-certs TEXT        |                                 Path to SSL CA certs (default: none)                                 |
+|  -u   | --redis-url TEXT                |                                Redis url (default: redis://127.0.0.1:6379)                                |
 |  -n   | --nodes TEXT               |                      Path to Node CSV file with the filename as the Node Label                       |
 |  -N   | --nodes-with-label TEXT    |                             Node Label followed by path to Node CSV file                             |
 |  -r   | --relations TEXT           |               Path to Relationship CSV file with the filename as the Relationship Type               |

@@ -129,12 +129,8 @@ class BulkUpdate:
 @click.command()
 @click.argument("graph")
 # Redis server connection settings
-@click.option("--host", "-h", default="127.0.0.1", help="Redis server host")
-@click.option("--port", "-p", default=6379, help="Redis server port")
-@click.option("--password", "-a", default=None, help="Redis server password")
-@click.option("--user", "-w", default=None, help="Username for Redis ACL")
 @click.option(
-    "--unix-socket-path", "-u", default=None, help="Redis server unix socket path"
+    "--redis-url", "-u", default="redis://127.0.0.1:6379", help="Redis connection url"
 )
 # Cypher query options
 @click.option("--query", "-q", help="Query to run on server")
@@ -165,11 +161,7 @@ class BulkUpdate:
 )
 def bulk_update(
     graph,
-    host,
-    port,
-    password,
-    user,
-    unix_socket_path,
+    redis_url,
     query,
     variable_name,
     csv,
@@ -183,22 +175,9 @@ def bulk_update(
     start_time = timer()
 
     # Attempt to connect to Redis server
+    client = redis.from_url(redis_url, decode_responses=True)
     try:
-        if unix_socket_path is not None:
-            client = redis.StrictRedis(
-                unix_socket_path=unix_socket_path,
-                username=user,
-                password=password,
-                decode_responses=True,
-            )
-        else:
-            client = redis.StrictRedis(
-                host=host,
-                port=port,
-                username=user,
-                password=password,
-                decode_responses=True,
-            )
+        client.ping()
     except redis.exceptions.ConnectionError as e:
         print("Could not connect to Redis server.")
         raise e

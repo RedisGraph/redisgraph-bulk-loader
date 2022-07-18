@@ -1,4 +1,3 @@
-import ssl
 import sys
 from timeit import default_timer as timer
 
@@ -51,17 +50,9 @@ def process_entities(entities):
 @click.command()
 @click.argument("graph")
 # Redis server connection settings
-@click.option("--host", "-h", default="127.0.0.1", help="Redis server host")
-@click.option("--port", "-p", default=6379, help="Redis server port")
-@click.option("--password", "-a", default=None, help="Redis server password")
-@click.option("--user", "-w", default=None, help="Username for Redis ACL")
 @click.option(
-    "--unix-socket-path", "-u", default=None, help="Redis server unix socket path"
+    "--redis-url", "-u", default="redis://127.0.0.1:6379", help="Redis connection url"
 )
-@click.option("--ssl-keyfile", "-k", default=None, help="SSL keyfile")
-@click.option("--ssl-certfile", "-l", default=None, help="SSL certfile")
-@click.option("--ssl-ca-certs", "-m", default=None, help="SSL CA certs")
-# CSV file paths
 @click.option("--nodes", "-n", multiple=True, help="Path to node csv file")
 @click.option(
     "--nodes-with-label",
@@ -151,14 +142,7 @@ def process_entities(entities):
 )
 def bulk_insert(
     graph,
-    host,
-    port,
-    password,
-    user,
-    unix_socket_path,
-    ssl_keyfile,
-    ssl_certfile,
-    ssl_ca_certs,
+    redis_url,
     nodes,
     nodes_with_label,
     relations,
@@ -202,25 +186,11 @@ def bulk_insert(
         escapechar,
     )
 
-    kwargs = {"host": host, "port": port, "username": user, "password": password}
-
-    if unix_socket_path is not None:
-        kwargs.update({"unix_socket_path": unix_socket_path})
-
-    if ssl_keyfile or ssl_certfile or ssl_ca_certs:
-        kwargs.update(
-            {
-                "ssl": True,
-                "ssl_keyfile": ssl_keyfile,
-                "ssl_certfile": ssl_certfile,
-                "ssl_cert_reqs": ssl.CERT_REQUIRED,
-                "ssl_ca_certs": ssl_ca_certs,
-            }
-        )
+    client = redis.from_url(redis_url)
 
     # Attempt to connect to Redis server
     try:
-        client = redis.Redis(**kwargs)
+        client.ping()
     except redis.exceptions.ConnectionError as e:
         print("Could not connect to Redis server.")
         raise e
