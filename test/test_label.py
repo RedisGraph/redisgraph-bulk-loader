@@ -6,13 +6,13 @@ from redisgraph_bulk_loader.config import Config
 from redisgraph_bulk_loader.label import Label
 
 
-class TestBulkLoader(unittest.TestCase):
+class TestBulkLoader:
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         """Delete temporary files"""
         os.remove("/tmp/labels.tmp")
 
-    def test01_process_schemaless_header(self):
+    def test_process_schemaless_header(self):
         """Verify that a schema-less header is parsed properly."""
         with open("/tmp/labels.tmp", mode="w") as csv_file:
             out = csv.writer(csv_file)
@@ -24,14 +24,14 @@ class TestBulkLoader(unittest.TestCase):
         label = Label(None, "/tmp/labels.tmp", "LabelTest", config)
 
         # The '_ID' column will not be stored, as the underscore indicates a private identifier.
-        self.assertEqual(label.column_names, [None, "prop"])
-        self.assertEqual(label.column_count, 2)
-        self.assertEqual(label.id, 0)
-        self.assertEqual(label.entity_str, "LabelTest")
-        self.assertEqual(label.prop_count, 1)
-        self.assertEqual(label.entities_count, 2)
+        assert label.column_names == [None, "prop"]
+        assert label.column_count == 2
+        assert label.id == 0
+        assert label.entity_str == "LabelTest"
+        assert label.prop_count == 1
+        assert label.entities_count == 2
 
-    def test02_process_header_with_schema(self):
+    def test_process_header_with_schema(self):
         """Verify that a header with a schema is parsed properly."""
         with open("/tmp/labels.tmp", mode="w") as csv_file:
             out = csv.writer(csv_file)
@@ -41,11 +41,11 @@ class TestBulkLoader(unittest.TestCase):
 
         config = Config(enforce_schema=True, store_node_identifiers=True)
         label = Label(None, "/tmp/labels.tmp", "LabelTest", config)
-        self.assertEqual(label.column_names, ["id", "property"])
-        self.assertEqual(label.column_count, 2)
-        self.assertEqual(label.id_namespace, "IDNamespace")
-        self.assertEqual(label.entity_str, "LabelTest")
-        self.assertEqual(label.prop_count, 2)
-        self.assertEqual(label.entities_count, 2)
-        self.assertEqual(label.types[0].name, "ID_STRING")
-        self.assertEqual(label.types[1].name, "STRING")
+        assert label.column_names == ["id", "property"]
+        assert label.column_count == 2
+        assert label.id_namespace == "IDNamespace"
+        assert label.entity_str == "LabelTest"
+        assert label.prop_count == 2
+        assert label.entities_count == 2
+        assert label.types[0].name == "ID_STRING"
+        assert label.types[1].name == "STRING"

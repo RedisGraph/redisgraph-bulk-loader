@@ -3,22 +3,22 @@ import unittest
 from redisgraph_bulk_loader.config import Config
 
 
-class TestBulkLoader(unittest.TestCase):
-    def test01_default_values(self):
+class TestBulkLoader:
+    def test_default_values(self):
         """Verify the default values in the Config class."""
         config = Config()
-        self.assertEqual(config.max_token_count, 1024 * 1023)
-        self.assertEqual(config.max_buffer_size, 64_000_000)
-        self.assertEqual(config.max_token_size, 64_000_000)
-        self.assertEqual(config.enforce_schema, False)
-        self.assertEqual(config.id_type, "STRING")
-        self.assertEqual(config.skip_invalid_nodes, False)
-        self.assertEqual(config.skip_invalid_edges, False)
-        self.assertEqual(config.store_node_identifiers, False)
-        self.assertEqual(config.separator, ",")
-        self.assertEqual(config.quoting, 3)
+        assert config.max_token_count == 1024 * 1023
+        assert config.max_buffer_size == 64_000_000
+        assert config.max_token_size == 64_000_000
+        assert config.enforce_schema == False
+        assert config.id_type == "STRING"
+        assert not config.skip_invalid_nodes
+        assert not config.skip_invalid_edges
+        assert not config.store_node_identifiers
+        assert config.separator == ","
+        assert config.quoting == 3
 
-    def test02_modified_values(self):
+    def test_modified_values(self):
         """Verify that Config_set updates Config class values accordingly."""
         config = Config(
             max_token_count=10,
@@ -31,17 +31,15 @@ class TestBulkLoader(unittest.TestCase):
             separator="|",
             quoting=0,
         )
-        self.assertEqual(config.max_token_count, 10)
-        self.assertEqual(
-            config.max_token_size, 200_000_000
-        )  # Max token size argument is converted to megabytes
-        self.assertEqual(
-            config.max_buffer_size, 500_000_000
-        )  # Buffer size argument is converted to megabytes
-        self.assertEqual(config.enforce_schema, True)
-        self.assertEqual(config.id_type, "INTEGER")
-        self.assertEqual(config.skip_invalid_nodes, True)
-        self.assertEqual(config.skip_invalid_edges, True)
-        self.assertEqual(config.store_node_identifiers, False)
-        self.assertEqual(config.separator, "|")
-        self.assertEqual(config.quoting, 0)
+        assert config.max_token_count == 10
+        assert config.max_token_size == 200_000_000
+        # Max token size argument is converted to megabytes
+        assert config.max_buffer_size == 500_000_000
+        # Buffer size argument is converted to megabytes
+        assert config.enforce_schema
+        assert config.id_type == "INTEGER"
+        assert config.skip_invalid_nodes
+        assert config.skip_invalid_edges
+        assert not config.store_node_identifiers
+        assert config.separator == "|"
+        assert config.quoting == 0

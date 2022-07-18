@@ -11,22 +11,21 @@ from redis import Redis
 from redisgraph_bulk_loader.bulk_update import bulk_update
 
 
-class TestBulkUpdate(unittest.TestCase):
+class TestBulkUpdate:
+
+    redis_con = redis.Redis(decode_responses=True)
+
     @classmethod
-    def setUpClass(cls):
-        """
-        Instantiate a new Redis connection
-        """
-        cls.redis_con = redis.Redis(host="localhost", port=6379, decode_responses=True)
+    def setup_class(cls):
         cls.redis_con.flushall()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         """Delete temporary files"""
-        os.remove("/tmp/csv.tmp")
+        os.unlink("/tmp/csv.tmp")
         cls.redis_con.flushall()
 
-    def test01_simple_updates(self):
+    def test_simple_updates(self):
         """Validate that bulk updates work on an empty graph."""
         graphname = "tmpgraph1"
         # Write temporary files
@@ -50,17 +49,17 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Labels added: 1", res.output)
-        self.assertIn("Nodes created: 3", res.output)
-        self.assertIn("Properties set: 6", res.output)
+        assert res.exit_code == 0
+        assert "Labels added: 1" in res.output
+        assert "Nodes created: 3" in res.output
+        assert "Properties set: 6" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query("MATCH (a) RETURN a.id, a.name ORDER BY a.id")
 
         # Validate that the expected results are all present in the graph
         expected_result = [[0, "a"], [3, "c"], [5, "b"]]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
         # Attempt to re-insert the entities using MERGE.
         res = runner.invoke(
@@ -76,12 +75,12 @@ class TestBulkUpdate(unittest.TestCase):
         )
 
         # No new entities should be created.
-        self.assertEqual(res.exit_code, 0)
-        self.assertNotIn("Labels added", res.output)
-        self.assertNotIn("Nodes created", res.output)
-        self.assertNotIn("Properties set", res.output)
+        assert res.exit_code == 0
+        assert "Labels added" not in res.output
+        assert "Nodes created" not in res.output
+        assert "Properties set" not in res.output
 
-    def test02_traversal_updates(self):
+    def test_traversal_updates(self):
         """Validate that bulk updates can create edges and perform traversals."""
         graphname = "tmpgraph1"
         # Write temporary files
@@ -107,10 +106,10 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Nodes created: 3", res.output)
-        self.assertIn("Relationships created: 3", res.output)
-        self.assertIn("Properties set: 6", res.output)
+        assert res.exit_code == 0
+        assert "Nodes created: 3" in res.output
+        assert "Relationships created: 3" in res.output
+        assert "Properties set: 6" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query(
@@ -119,9 +118,9 @@ class TestBulkUpdate(unittest.TestCase):
 
         # Validate that the expected results are all present in the graph
         expected_result = [["a", "a2"], ["b", "b2"], ["c", "c2"]]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
-    def test03_datatypes(self):
+    def test_datatypes(self):
         """Validate that all RedisGraph datatypes are supported by the bulk updater."""
         graphname = "tmpgraph2"
         # Write temporary files
@@ -143,9 +142,9 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Nodes created: 1", res.output)
-        self.assertIn("Properties set: 5", res.output)
+        assert res.exit_code == 0
+        assert "Nodes created: 1" in res.output
+        assert "Properties set: 5" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query(
@@ -154,9 +153,9 @@ class TestBulkUpdate(unittest.TestCase):
 
         # Validate that the expected results are all present in the graph
         expected_result = [[0, 1.5, True, "string", "[1,'nested_str']"]]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
-    def test04_custom_delimiter(self):
+    def test_custom_delimiter(self):
         """Validate that non-comma delimiters produce the correct results."""
         graphname = "tmpgraph3"
         # Write temporary files
@@ -182,17 +181,17 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Labels added: 1", res.output)
-        self.assertIn("Nodes created: 3", res.output)
-        self.assertIn("Properties set: 6", res.output)
+        assert res.exit_code == 0
+        assert "Labels added: 1" in res.output
+        assert "Nodes created: 3" in res.output
+        assert "Properties set: 6" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query("MATCH (a) RETURN a.id, a.name ORDER BY a.id")
 
         # Validate that the expected results are all present in the graph
         expected_result = [[0, "a"], [3, "c"], [5, "b"]]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
         # Attempt to re-insert the entities using MERGE.
         res = runner.invoke(
@@ -210,12 +209,12 @@ class TestBulkUpdate(unittest.TestCase):
         )
 
         # No new entities should be created.
-        self.assertEqual(res.exit_code, 0)
-        self.assertNotIn("Labels added", res.output)
-        self.assertNotIn("Nodes created", res.output)
-        self.assertNotIn("Properties set", res.output)
+        assert res.exit_code == 0
+        assert "Labels added" not in res.output
+        assert "Nodes created" not in res.output
+        assert "Properties set" not in res.output
 
-    def test05_custom_variable_name(self):
+    def test_custom_variable_name(self):
         """Validate that the user can specify the name of the 'row' query variable."""
         graphname = "variable_name"
         runner = CliRunner()
@@ -239,10 +238,10 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Labels added: 1", res.output)
-        self.assertIn("Nodes created: 14", res.output)
-        self.assertIn("Properties set: 56", res.output)
+        assert res.exit_code == 0
+        assert "Labels added: 1" in res.output
+        assert "Nodes created: 14" in res.output
+        assert "Properties set: 56" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
 
@@ -266,9 +265,9 @@ class TestBulkUpdate(unittest.TestCase):
             ["Tal Doron", 32, "male", "single"],
             ["Valerie Abigail Arad", 31, "female", "married"],
         ]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
-    def test06_no_header(self):
+    def test_no_header(self):
         """Validate that the '--no-header' option works properly."""
         graphname = "tmpgraph4"
         # Write temporary files
@@ -292,19 +291,19 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Labels added: 1", res.output)
-        self.assertIn("Nodes created: 3", res.output)
-        self.assertIn("Properties set: 6", res.output)
+        assert res.exit_code == 0
+        assert "Labels added: 1" in res.output
+        assert "Nodes created: 3" in res.output
+        assert "Properties set: 6" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query("MATCH (a) RETURN a.id, a.name ORDER BY a.id")
 
         # Validate that the expected results are all present in the graph
         expected_result = [[0, "a"], [3, "c"], [5, "b"]]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
-    def test07_batched_update(self):
+    def test_batched_update(self):
         """Validate that updates performed over multiple batches produce the correct results."""
         graphname = "batched_update"
 
@@ -331,19 +330,19 @@ class TestBulkUpdate(unittest.TestCase):
             catch_exceptions=False,
         )
 
-        self.assertEqual(res.exit_code, 0)
-        self.assertIn("Labels added: 1", res.output)
-        self.assertIn("Nodes created: 100000", res.output)
-        self.assertIn("Properties set: 100000", res.output)
+        assert res.exit_code == 0
+        assert "Labels added: 1" in res.output
+        assert "Nodes created: 100000" in res.output
+        assert "Properties set: 100000" in res.output
 
         tmp_graph = self.redis_con.graph(graphname)
         query_result = tmp_graph.query("MATCH (a) RETURN DISTINCT a.prop")
 
         # Validate that the expected results are all present in the graph
         expected_result = [[prop_str]]
-        self.assertEqual(query_result.result_set, expected_result)
+        assert query_result.result_set == expected_result
 
-    def test08_runtime_error(self):
+    def test_runtime_error(self):
         """Validate that run-time errors are captured by the bulk updater."""
         graphname = "tmpgraph5"
 
@@ -364,10 +363,10 @@ class TestBulkUpdate(unittest.TestCase):
             ],
         )
 
-        self.assertNotEqual(res.exit_code, 0)
-        self.assertIn("Cannot merge node", str(res.exception))
+        assert res.exit_code != 0
+        assert "Cannot merge node" in str(res.exception)
 
-    def test09_compile_time_error(self):
+    def test_compile_time_error(self):
         """Validate that malformed queries trigger an early exit from the bulk updater."""
         graphname = "tmpgraph5"
         runner = CliRunner()
@@ -383,10 +382,10 @@ class TestBulkUpdate(unittest.TestCase):
             ],
         )
 
-        self.assertNotEqual(res.exit_code, 0)
-        self.assertIn("undefined_identifier not defined", str(res.exception))
+        assert res.exit_code != 0
+        assert "undefined_identifier not defined" in str(res.exception)
 
-    def test10_invalid_inputs(self):
+    def test_invalid_inputs(self):
         """Validate that the bulk updater handles invalid inputs incorrectly."""
         graphname = "tmpgraph6"
 
@@ -403,5 +402,5 @@ class TestBulkUpdate(unittest.TestCase):
             ],
         )
 
-        self.assertNotEqual(res.exit_code, 0)
-        self.assertIn("No such file", str(res.exception))
+        assert res.exit_code != 0
+        assert "No such file" in str(res.exception)
