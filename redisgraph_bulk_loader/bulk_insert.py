@@ -4,22 +4,27 @@ from timeit import default_timer as timer
 import click
 import redis
 
-from .config import Config
-from .label import Label
-from .query_buffer import QueryBuffer
-from .relation_type import RelationType
+try:
+    from .config import Config
+    from .label import Label
+    from .query_buffer import QueryBuffer
+    from .relation_type import RelationType
+except:
+    from config import Config
+    from label import Label
+    from query_buffer import QueryBuffer
+    from relation_type import RelationType
 
-
-def parse_schemas(cls, query_buf, path_to_csv, csv_tuples, config):
+def parse_schemas(cls, query_buf, path_to_csv, csv_tuples, config, label_column):
     schemas = [None] * (len(path_to_csv) + len(csv_tuples))
     for idx, in_csv in enumerate(path_to_csv):
         # Build entity descriptor from input CSV
-        schemas[idx] = cls(query_buf, in_csv, None, config)
+        schemas[idx] = cls(query_buf, in_csv, None, config, label_column)
 
     offset = len(path_to_csv)
     for idx, csv_tuple in enumerate(csv_tuples):
         # Build entity descriptor from input CSV
-        schemas[idx + offset] = cls(query_buf, csv_tuple[1], csv_tuple[0], config)
+        schemas[idx + offset] = cls(query_buf, csv_tuple[1], csv_tuple[0], config, label_column)
     return schemas
 
 
@@ -54,6 +59,7 @@ def process_entities(entities):
     "--redis-url", "-u", default="redis://127.0.0.1:6379", help="Redis connection url"
 )
 @click.option("--nodes", "-n", multiple=True, help="Path to node csv file")
+@click.option("--node-label-column", "-L", default=None, nargs=2, help="Import based on <column> having <value>")
 @click.option(
     "--nodes-with-label",
     "-N",
@@ -62,6 +68,7 @@ def process_entities(entities):
     help="Label string followed by path to node csv file",
 )
 @click.option("--relations", "-r", multiple=True, help="Path to relation csv file")
+@click.option("--relation-type-column", "-T", default=None, nargs=2, help="Import based on <column> having <value>")
 @click.option(
     "--relations-with-type",
     "-R",
@@ -144,8 +151,10 @@ def bulk_insert(
     graph,
     redis_url,
     nodes,
+    node_label_column,
     nodes_with_label,
     relations,
+    relation_type_column,
     relations_with_type,
     separator,
     enforce_schema,
@@ -160,9 +169,7 @@ def bulk_insert(
     index,
     full_text_index,
 ):
-    if sys.version_info.major < 3 or sys.version_info.minor < 6:
-        raise Exception("Python >= 3.6 is required for the RedisGraph bulk loader.")
-
+    
     if not (any(nodes) or any(nodes_with_label)):
         raise Exception("At least one node file must be specified.")
 
@@ -216,9 +223,9 @@ def bulk_insert(
     query_buf = QueryBuffer(graph, client, config)
 
     # Read the header rows of each input CSV and save its schema.
-    labels = parse_schemas(Label, query_buf, nodes, nodes_with_label, config)
+    labels = parse_schemas(Label, query_buf, nodes, nodes_with_label, config, node_label_column)
     reltypes = parse_schemas(
-        RelationType, query_buf, relations, relations_with_type, config
+        RelationType, query_buf, relations, relations_with_type, config, relation_type_column,
     )
 
     process_entities(labels)

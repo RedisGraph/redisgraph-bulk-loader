@@ -1,4 +1,7 @@
-from .exceptions import SchemaError
+try:
+    from .exceptions import SchemaError
+except:
+    from exceptions import SchemaError
 
 
 class Config:
