@@ -3,17 +3,21 @@ import sys
 
 import click
 
-from .entity_file import EntityFile, Type
-from .exceptions import SchemaError
+try:
+    from .entity_file import EntityFile, Type
+    from .exceptions import SchemaError
+except:
+    from entity_file import EntityFile, Type
+    from exceptions import SchemaError
 
 
 class Label(EntityFile):
     """Handler class for processing Label CSV files."""
 
-    def __init__(self, query_buffer, infile, label_str, config):
+    def __init__(self, query_buffer, infile, label_str, config, filter_column=None):
         self.id_namespace = None
         self.query_buffer = query_buffer
-        super(Label, self).__init__(infile, label_str, config)
+        super(Label, self).__init__(infile, label_str, config, filter_column)
 
     def process_schemaless_header(self, header):
         # The first column is the ID.
@@ -70,6 +74,8 @@ class Label(EntityFile):
         ) as reader:
             for row in reader:
                 self.validate_row(row)
+                if self.filter_value is not None and row[self.filter_column_id] != self.filter_value:
+                    continue
 
                 # Update the node identifier dictionary if necessary
                 if self.config.store_node_identifiers:
@@ -107,5 +113,5 @@ class Label(EntityFile):
                 self.binary_size += row_binary_len
                 self.binary_entities.append(row_binary)
             self.query_buffer.labels.append(self.to_binary())
-        self.infile.close()
+            self.infile.close()
         print("%d nodes created with label '%s'" % (entities_created, self.entity_str))

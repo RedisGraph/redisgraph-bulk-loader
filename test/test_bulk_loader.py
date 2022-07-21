@@ -29,6 +29,13 @@ def row_count(in_csv):
 
 class TestBulkLoader:
 
+    csv_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                         "..", "example"))
+    person_file = os.path.join(csv_path, "Person.csv")
+    country_file = os.path.join(csv_path ,"Country.csv")
+    knows_file = os.path.join(csv_path, "KNOWS.csv")
+    visited_file = os.path.join(csv_path, "VISITED.csv")
+
     redis_con = redis.Redis(decode_responses=True)
 
     @classmethod
@@ -62,29 +69,23 @@ class TestBulkLoader:
         graphname = "social"
         runner = CliRunner()
 
-        csv_path = os.path.dirname(os.path.abspath(__file__)) + "/../example/"
-        person_file = csv_path + "Person.csv"
-        country_file = csv_path + "Country.csv"
-        knows_file = csv_path + "KNOWS.csv"
-        visited_file = csv_path + "VISITED.csv"
-
         # Set the globals for node edge counts, as they will be reused.
-        person_count = str(row_count(person_file))
-        country_count = str(row_count(country_file))
-        knows_count = str(row_count(knows_file))
-        visited_count = str(row_count(visited_file))
+        person_count = str(row_count(self.person_file))
+        country_count = str(row_count(self.country_file))
+        knows_count = str(row_count(self.knows_file))
+        visited_count = str(row_count(self.visited_file))
 
         res = runner.invoke(
             bulk_insert,
             [
                 "--nodes",
-                person_file,
+                self.person_file,
                 "--nodes",
-                country_file,
+                self.country_file,
                 "--relations",
-                knows_file,
+                self.knows_file,
                 "--relations",
-                visited_file,
+                self.visited_file,
                 graphname,
             ],
         )
@@ -290,20 +291,86 @@ class TestBulkLoader:
         # The script should succeed and create 3 nodes
         assert res.exit_code == 0
         assert "3 nodes created" in res.output
+        
+    def test_filtered_nodes(self):
+        """Create a nodeset using a filtered set"""
+        self.redis_con.flushall()
+        graphname = "filtered_set"
+        runner = CliRunner()
+        
+        res = runner.invoke(
+            bulk_insert,
+            [
+                "--nodes",
+                self.person_file,
+                "-L", 
+                "status",
+                "single",
+                graphname,
+            ],
+            catch_exceptions=False
+        )
+        assert res.exit_code == 0
+        assert "4 nodes created" in res.output
+        
+        # and now multiple files at once
+        self.redis_con.flushall()
+        graphname = "filtered_set"
+        runner = CliRunner()
+        
+        res = runner.invoke(
+            bulk_insert,
+            [
+                "-n",
+                self.person_file,
+                "-n",
+                self.country_file,
+                "-L", 
+                "status",
+                "single",
+                graphname,
+            ],
+            catch_exceptions=False
+        )
+        assert res.exit_code == 0
+        assert "13 nodes created" in res.output
+       
+    def test_filtered_relations(self):
+        """Create a filtered relation set"""
+        self.redis_con.flushall()
+        graphname = "filtered_set"
+        runner = CliRunner()
+        
+        res = runner.invoke(
+            bulk_insert,
+            [
+                "--nodes",
+                self.person_file,
+                "--nodes",
+                self.country_file,
+                "--relations",
+                self.knows_file,
+                "--relations",
+                self.visited_file,
+                "-T",
+                "purpose",
+                "pleasure",
+                graphname,
+            ],
+            catch_exceptions=False
+        )
+        assert res.exit_code == 0
+        assert "48 relations created" in res.output
 
     def test_batched_build(self):
         """
         Create a graph using many batches.
         Reuses the inputs of test01_social_graph
         """
+        self.test_social_graph()
         graphname = "batched_graph"
         runner = CliRunner()
 
-        csv_path = os.path.dirname(os.path.abspath(__file__)) + "/../example/"
-        person_file = csv_path + "Person.csv"
-        country_file = csv_path + "Country.csv"
-        knows_file = csv_path + "KNOWS.csv"
-        visited_file = csv_path + "VISITED.csv"
         csv_path = (
             os.path.dirname(os.path.abspath(__file__))
             + "/../../demo/bulk_insert/resources/"
@@ -313,13 +380,13 @@ class TestBulkLoader:
             bulk_insert,
             [
                 "--nodes",
-                person_file,
+                self.person_file,
                 "--nodes",
-                country_file,
+                self.country_file,
                 "--relations",
-                knows_file,
+                self.knows_file,
                 "--relations",
-                visited_file,
+                self.visited_file,
                 "--max-token-count",
                 1,
                 graphname,

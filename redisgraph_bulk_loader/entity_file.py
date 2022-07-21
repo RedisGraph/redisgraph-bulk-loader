@@ -7,7 +7,10 @@ import struct
 import sys
 from enum import Enum
 
-from .exceptions import CSVError, SchemaError
+try:
+    from .exceptions import CSVError, SchemaError
+except:
+    from exceptions import CSVError, SchemaError
 
 csv.field_size_limit(sys.maxsize)  # Don't limit the size of user input fields.
 
@@ -179,7 +182,7 @@ def inferred_prop_to_binary(prop_val):
 class EntityFile(object):
     """Superclass for Label and RelationType classes"""
 
-    def __init__(self, filename, label, config):
+    def __init__(self, filename, label, config, filter_column=None):
         # The configurations for this run.
         self.config = config
 
@@ -204,10 +207,30 @@ class EntityFile(object):
         self.packed_header = b""
         self.binary_entities = []
         self.binary_size = 0  # size of binary token
-
+        
         self.convert_header()  # Extract data from header row.
         self.count_entities()  # Count number of entities/row in file.
+        
+        if filter_column is None:
+            self.__FILTER_ID__ =  -1
+            self.__FILTER_VALUE__ = None
+        else:
+            try:
+                self.__FILTER_ID__ = self.column_names.index(filter_column[0])
+                self.__FILTER_VALUE__ = filter_column[1]
+            except ValueError:  # it doesn't have to apply in the multiple file case
+                self.__FILTER_ID__ =  -1
+                self.__FILTER_VALUE__ = None
+ 
         next(self.reader)  # Skip the header row.
+        
+    @property
+    def filter_value(self):
+        return self.__FILTER_VALUE__
+    
+    @property
+    def filter_column_id(self):
+        return self.__FILTER_ID__
 
     # Count number of rows in file.
     def count_entities(self):

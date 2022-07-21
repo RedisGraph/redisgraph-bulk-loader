@@ -3,14 +3,18 @@ import struct
 
 import click
 
-from .entity_file import EntityFile, Type
-from .exceptions import CSVError, SchemaError
+try:
+    from .entity_file import EntityFile, Type
+    from .exceptions import CSVError, SchemaError
+except:
+    from entity_file import EntityFile, Type
+    from exceptions import CSVError, SchemaError
 
 
 # Handler class for processing relation csv files.
 class RelationType(EntityFile):
-    def __init__(self, query_buffer, infile, type_str, config):
-        super(RelationType, self).__init__(infile, type_str, config)
+    def __init__(self, query_buffer, infile, type_str, config, filter_column=None):
+        super(RelationType, self).__init__(infile, type_str, config, filter_column=None)
         self.query_buffer = query_buffer
 
     def process_schemaless_header(self, header):
@@ -63,6 +67,9 @@ class RelationType(EntityFile):
         ) as reader:
             for row in reader:
                 self.validate_row(row)
+                if self.filter_value is not None and row[self.filter_column_id] != self.filter_value:
+                    continue
+                
                 try:
                     start_id = row[self.start_id]
                     if self.start_namespace:
