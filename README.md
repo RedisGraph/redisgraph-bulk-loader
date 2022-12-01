@@ -70,9 +70,9 @@ RedisGraph does not impose a schema on properties, so the same property key can 
 ### Extended parameter descriptions
 The flags for `max-token-count`, `max-buffer-size`, and `max-token-size` are typically not required. They should only be specified if the memory overhead of graph creation is too high, or raised if the volume of Redis calls is too high. The bulk loader builds large graphs by sending binary tokens (each of which holds multiple nodes or relations) to Redis in batches.
 
-`--quote` is maintained for backwards compatibility, and allows some control over Python's type inference in the default mode. `--enforce-schema-type` is preferred.
+`--quote` is maintained for backwards compatibility, and allows some control over Python's type inference in the default mode. `--enforce-schema` is preferred.
 
-`--enforce-schema-type` indicates that input CSV headers will follow the form described in [Input Schemas](#input-schemas).
+`--enforce-schema` indicates that input CSV headers will follow the form described in [Input Schemas](#input-schemas).
 
 `--nodes-with-label` and `--relations-with-type` allows the node label or relationship type to be explicitly written instead of inferring them from the filename. For example, `--relations-with-type HAS_TAG post_hasTag_tag.csv` will add all relationships described in the specified CSV with the type `HAS_TAG`. To specify miltiple label separate them with ':'. For example, `--nodes-with-label Actor:Director actors.csv` will add all nodes described in the specified CSV with the labels `Actor` and `Director`.
 
