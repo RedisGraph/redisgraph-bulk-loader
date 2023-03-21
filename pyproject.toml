@@ -10,7 +10,6 @@ classifiers = [
     'Topic :: Database',
     'Programming Language :: Python',
     'Intended Audience :: Developers',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
@@ -31,7 +30,7 @@ url = "https://redisgraph.io"
 repository = "https://github.com/RedisGraph/redisgraph-bulk-loader"
 
 [tool.poetry.dependencies]
-python = "^3.6.5"
+python = ">= 3.7.0"
 click = "^8.0.1"
 redis = "^4.5.1"
 pathos = "^0.2.8"
