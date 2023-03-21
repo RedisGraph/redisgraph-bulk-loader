@@ -87,7 +87,7 @@ jobs:
         run: tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v3
-      if: matrix.python_version == '3.9' && matrix.platform != 'macos-11'
+      if: matrix.python-version == '3.9' && matrix.platform != 'macos-11'
         with:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOVTOKEN }}
