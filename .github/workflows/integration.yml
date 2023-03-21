@@ -30,18 +30,6 @@ jobs:
         with:
           python-version: ${{env.basepython}}
 
-      - name: Cache paths
-        uses: actions/cache@v2
-        with:
-          path: |
-            .tox
-            ~/.virtualenvs
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          key: lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
-          restore-keys: |
-            lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
-
       - name: prepare the environment
         run: |
           pip install -U setuptools pip poetry tox-docker tox-poetry
@@ -67,18 +55,6 @@ jobs:
         with:
           python-version: ${{matrix.python}}
           architecture: x64
-
-#      - name: Cache paths
-#        uses: actions/cache@v3
-#        with:
-#          path: |
-#            .tox
-#            ~/.virtualenvs
-#            ~/.cache/pip
-#            ~/.cache/pypoetry
-#          key: cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
-#          restore-keys: |
-#            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
 
       - name: Prepare environment
         run: |
