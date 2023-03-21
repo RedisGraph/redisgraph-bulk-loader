@@ -80,12 +80,12 @@ jobs:
 #          restore-keys: |
 #            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
 
-      - name: prepare the environment
+      - name: Prepare environment
         run: |
           pip install -U setuptools pip poetry tox-docker tox-poetry
           poetry config virtualenvs.create false
           poetry install
-      - name: run tests
+      - name: Run tests
         run: tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v3
