@@ -195,7 +195,7 @@ def bulk_update(
     updater = BulkUpdate(
         graph, max_token_size, separator, no_header, csv, query, variable_name, client
     )
-    
+
     if graph in client.keys():
         updater.validate_query()
     else:
