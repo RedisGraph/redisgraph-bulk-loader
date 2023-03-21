@@ -26,10 +26,10 @@ jobs:
           key: "tool.poetry.version"
           value: "${{ steps.get_version.outputs.VERSION }}"
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         uses: actions/setup-python@v3
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Install Poetry
         uses: dschep/install-poetry-action@v1.3
