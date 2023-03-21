@@ -27,7 +27,7 @@ jobs:
           value: "${{ steps.get_version.outputs.VERSION }}"
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v3
         with:
           python-version: 3.8
 
@@ -35,7 +35,7 @@ jobs:
         uses: dschep/install-poetry-action@v1.3
 
       - name: Cache Poetry virtualenv
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         id: cache
         with:
           path: ~/.virtualenvs

@@ -56,7 +56,9 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     strategy:
       matrix:
+        platform: ['ubuntu-20.04', 'macos-11']
         python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
     name: Test Python ${{matrix.python-version}}
     steps:
       - uses: actions/checkout@v3
@@ -65,7 +67,7 @@ jobs:
         with:
           python-version: ${{matrix.python-version}}
       - name: Cache paths
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             .tox
@@ -84,7 +86,8 @@ jobs:
       - name: run tests
         run: tox -e cover
       - name: Upload coverage
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
+      if: matrix.python_version == '3.9' && matrix.platform != 'macos-11'
         with:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOVTOKEN }}
