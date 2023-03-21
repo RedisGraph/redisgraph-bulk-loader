@@ -38,9 +38,9 @@ jobs:
             ~/.virtualenvs
             ~/.cache/pip
             ~/.cache/pypoetry
-          key: lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+          key: lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
           restore-keys: |
-            lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+            lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
 
       - name: prepare the environment
         run: |
@@ -51,32 +51,34 @@ jobs:
         run: tox -e linters
 
   tests:
-    runs-on: ubuntu-latest
+    name: Test on ${{ matrix.platform }} with Python ${{ matrix.python }}
+    runs-on: ${{ matrix.platform }}
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     strategy:
       matrix:
         platform: ['ubuntu-20.04', 'macos-11']
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+        python: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
       fail-fast: false
-    name: Test Python ${{matrix.python-version}}
     steps:
       - uses: actions/checkout@v3
-      - name: install base python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{matrix.python-version}}
-      - name: Cache paths
-        uses: actions/cache@v3
-        with:
-          path: |
-            .tox
-            ~/.virtualenvs
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          key: cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
-          restore-keys: |
-            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+          python-version: ${{matrix.python}}
+          architecture: x64
+
+#      - name: Cache paths
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            .tox
+#            ~/.virtualenvs
+#            ~/.cache/pip
+#            ~/.cache/pypoetry
+#          key: cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
+#          restore-keys: |
+#            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python}}
 
       - name: prepare the environment
         run: |
@@ -87,7 +89,7 @@ jobs:
         run: tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v3
-      if: matrix.python-version == '3.9' && matrix.platform != 'macos-11'
+        if: matrix.python == '3.9' && matrix.platform != 'macos-11'
         with:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOVTOKEN }}
