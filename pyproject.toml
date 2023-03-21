@@ -32,8 +32,7 @@ repository = "https://github.com/RedisGraph/redisgraph-bulk-loader"
 [tool.poetry.dependencies]
 python = ">= 3.7.0"
 click = "^8.0.1"
-# redis = "^4.5.1"
-redis = "~= 4.3.4"
+redis = "~= 4.5.1"
 pathos = "^0.2.8"
 
 [tool.poetry.dev-dependencies]
