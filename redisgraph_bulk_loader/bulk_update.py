@@ -195,7 +195,14 @@ def bulk_update(
     updater = BulkUpdate(
         graph, max_token_size, separator, no_header, csv, query, variable_name, client
     )
-    updater.validate_query()
+
+    if graph in client.keys():
+        updater.validate_query()
+    else:
+        client.execute_command("GRAPH.QUERY", graph, "RETURN 1")
+        updater.validate_query()
+        client.execute_command("GRAPH.DELETE", graph)
+
     updater.process_update_csv()
 
     end_time = timer()
