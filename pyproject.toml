@@ -36,7 +36,7 @@ redis = "^4.3.4"
 pathos = "^0.2.8"
 
 [tool.poetry.dev-dependencies]
-codecov = "^2.1.11"
+codecov = "2.1.13"
 flake8 = "^3.9.2"
 tox = "^3.15.0"
 tox-poetry = "^0.3.0"
