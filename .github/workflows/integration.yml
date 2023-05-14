@@ -21,7 +21,7 @@ jobs:
   lint:
     services:
       stack:
-        image: redis/redi-stack-server:edge
+        image: redis/redis-stack-server:edge
         options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
         ports:
           - 6379:6379
@@ -84,7 +84,7 @@ jobs:
 
       - name: prepare the environment
         run: |
-          pip install -U setuptools pip poetry tox-docker tox-poetry
+          pip install -U setuptools pip poetry==1.3.2 tox-poetry
           poetry config virtualenvs.create false
           poetry install
       - name: run tests
