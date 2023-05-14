@@ -32,20 +32,30 @@ jobs:
 
       - name: prepare the environment
         run: |
-          pip install -U setuptools pip poetry tox-docker tox-poetry
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -U setuptools pip poetry==1.3.2 tox-poetry
           poetry config virtualenvs.create false
           poetry install
       - name: lint
-        run: tox -e linters
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          tox -e linters
 
   tests:
     name: Test on ${{ matrix.platform }} with Python ${{ matrix.python }}
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    services:
+      stack:
+        image: redis/redis-stack-server:edge
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 6379:6379
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     strategy:
       matrix:
-        platform: ['ubuntu-20.04']
         python: ['3.7', '3.8', '3.9', '3.10', '3.11']
       fail-fast: false
     steps:
@@ -54,15 +64,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.python}}
-          architecture: x64
 
       - name: Prepare environment
         run: |
-          pip install -U setuptools pip poetry tox-docker tox-poetry
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -U setuptools pip poetry==1.3.2 tox-poetry
           poetry config virtualenvs.create false
           poetry install
       - name: Run tests
-        run: tox -e cover
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: matrix.python == '3.9' && matrix.platform != 'macos-11'
