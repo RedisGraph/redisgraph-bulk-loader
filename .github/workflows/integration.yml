@@ -36,17 +36,17 @@ jobs:
         with:
           python-version: ${{env.basepython}}
 
-      - name: Cache paths
-        uses: actions/cache@v2
-        with:
-          path: |
-            .tox
-            ~/.virtualenvs
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          key: lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
-          restore-keys: |
-            lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+#      - name: Cache paths
+#        uses: actions/cache@v2
+#        with:
+#          path: |
+#            .tox
+#            ~/.virtualenvs
+#            ~/.cache/pip
+#            ~/.cache/pypoetry
+#          key: lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+#          restore-keys: |
+#            lint-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
 
       - name: prepare the environment
         run: |
@@ -70,17 +70,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.python-version}}
-      - name: Cache paths
-        uses: actions/cache@v2
-        with:
-          path: |
-            .tox
-            ~/.virtualenvs
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          key: cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
-          restore-keys: |
-            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+#      - name: Cache paths
+#        uses: actions/cache@v2
+#        with:
+#          path: |
+#            .tox
+#            ~/.virtualenvs
+#            ~/.cache/pip
+#            ~/.cache/pypoetry
+#          key: cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
+#          restore-keys: |
+#            cover-${{ hashFiles('**/poetry.lock', '**/tox.ini', '**/pyproject.toml') }}-${{ matrix.python-version}}
 
       - name: prepare the environment
         run: |
