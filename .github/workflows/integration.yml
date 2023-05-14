@@ -19,12 +19,6 @@ env:
 
 jobs:
   lint:
-    services:
-      stack:
-        image: redis/redis-stack-server:edge
-        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
-        ports:
-          - 6379:6379
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     name: Code linting
@@ -52,6 +46,12 @@ jobs:
   tests:
     name: Test on ${{ matrix.platform }} with Python ${{ matrix.python }}
     runs-on: ubuntu-latest
+    services:
+      stack:
+        image: redis/redis-stack-server:edge
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 6379:6379
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     strategy:
