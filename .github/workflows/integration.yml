@@ -35,14 +35,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{env.basepython}}
-          
+
       - name: prepare the environment
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           pip install -U setuptools pip poetry==1.3.2 tox-poetry
           poetry config virtualenvs.create false
           poetry install
       - name: lint
-        run: tox -e linters
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          tox -e linters
 
   tests:
     name: Test on ${{ matrix.platform }} with Python ${{ matrix.python }}
@@ -62,11 +67,16 @@ jobs:
 
       - name: Prepare environment
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           pip install -U setuptools pip poetry==1.3.2 tox-poetry
           poetry config virtualenvs.create false
           poetry install
       - name: Run tests
-        run: tox -e cover
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          tox -e cover
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: matrix.python == '3.9' && matrix.platform != 'macos-11'
