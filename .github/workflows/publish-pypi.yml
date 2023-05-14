@@ -44,4 +44,5 @@ jobs:
       - name: Publish to PyPI
         if: github.event_name == 'release'
         run: |
+          source .venv/bin/activate
           poetry publish -u __token__ -p ${{ secrets.PYPI_TOKEN }} --build
